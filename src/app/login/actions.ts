@@ -4,71 +4,76 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-export type LoginState =
-  | { step: "email"; error?: string }
-  | { step: "code"; email: string; error?: string };
+export type LoginState = { error?: string; notice?: string };
 
-const emailSchema = z.email().transform((e) => e.trim().toLowerCase());
-const codeSchema = z.string().trim().regex(/^\d{6}$/);
+const MIN_PASSWORD_LENGTH = 8;
 
-export async function sendCode(
-  _prev: LoginState,
-  formData: FormData,
-): Promise<LoginState> {
-  const email = emailSchema.safeParse(formData.get("email"));
-  if (!email.success) {
-    return { step: "email", error: "Enter a valid email." };
-  }
+const credentialsSchema = z.object({
+  email: z.email().transform((e) => e.trim().toLowerCase()),
+  password: z.string().min(1),
+});
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email: email.data,
-    // New accounts are only created for allowlisted emails (auth hook).
-    options: { shouldCreateUser: true },
+function readCredentials(formData: FormData) {
+  return credentialsSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
   });
-
-  if (error) {
-    // The allowlist hook rejects unknown emails with a 403.
-    const notAllowed = error.status === 403 || /access list/i.test(error.message);
-    return {
-      step: "email",
-      error: notAllowed
-        ? "This email doesn't have access yet."
-        : "Couldn't send a code. Try again in a minute.",
-    };
-  }
-
-  return { step: "code", email: email.data };
 }
 
-export async function verifyCode(
+export async function signIn(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const email = emailSchema.safeParse(formData.get("email"));
-  if (!email.success) return { step: "email" };
-
-  const code = codeSchema.safeParse(formData.get("code"));
-  if (!code.success) {
-    return { step: "code", email: email.data, error: "Enter the 6-digit code from the email." };
+  const creds = readCredentials(formData);
+  if (!creds.success) {
+    return { error: "Enter your email and password." };
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({
-    email: email.data,
-    token: code.data,
-    type: "email",
-  });
+  const { error } = await supabase.auth.signInWithPassword(creds.data);
 
   if (error) {
-    return {
-      step: "code",
-      email: email.data,
-      error: "That code didn't work. Check it or send a new one.",
-    };
+    if (error.code === "email_not_confirmed") {
+      return { error: "Confirm your email first, then sign in." };
+    }
+    return { error: "That email and password don't match." };
   }
 
   redirect("/");
+}
+
+export async function signUp(
+  _prev: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
+  const creds = readCredentials(formData);
+  if (!creds.success) {
+    return { error: "Enter your email and a password." };
+  }
+  if (creds.data.password.length < MIN_PASSWORD_LENGTH) {
+    return { error: `Use at least ${MIN_PASSWORD_LENGTH} characters.` };
+  }
+
+  const supabase = await createClient();
+  // New accounts are only created for allowlisted emails (auth hook).
+  const { data, error } = await supabase.auth.signUp(creds.data);
+
+  if (error) {
+    const notAllowed = error.status === 403 || /access list/i.test(error.message);
+    if (notAllowed) return { error: "This email doesn't have access yet." };
+    if (error.code === "weak_password") {
+      return { error: "Pick a stronger password." };
+    }
+    if (error.code === "user_already_exists") {
+      return { error: "That email already has an account. Sign in instead." };
+    }
+    return { error: "Couldn't create the account. Try again in a minute." };
+  }
+
+  // With "Confirm email" off in Supabase, sign-up returns a session directly.
+  if (data.session) redirect("/");
+
+  return { notice: "Check your email to confirm, then sign in here." };
 }
 
 export async function signOut() {

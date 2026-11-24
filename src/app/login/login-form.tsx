@@ -4,74 +4,69 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { sendCode, verifyCode, type LoginState } from "./actions";
+import { signIn, signUp, type LoginState } from "./actions";
+
+type Mode = "sign-in" | "sign-up";
 
 export function LoginForm() {
-  // Remounting with a new key resets both steps ("use a different email").
-  const [attempt, setAttempt] = useState(0);
-  return <LoginSteps key={attempt} onRestart={() => setAttempt((n) => n + 1)} />;
+  const [mode, setMode] = useState<Mode>("sign-in");
+  // Remount on mode change so each form starts with a clean state.
+  return <CredentialsForm key={mode} mode={mode} onSwitch={setMode} />;
 }
 
-function LoginSteps({ onRestart }: { onRestart: () => void }) {
-  const [emailState, emailAction, sending] = useActionState<LoginState, FormData>(
-    sendCode,
-    { step: "email" },
+function CredentialsForm({
+  mode,
+  onSwitch,
+}: {
+  mode: Mode;
+  onSwitch: (mode: Mode) => void;
+}) {
+  const isSignUp = mode === "sign-up";
+  const [state, action, pending] = useActionState<LoginState, FormData>(
+    isSignUp ? signUp : signIn,
+    {},
   );
-  const [codeState, codeAction, verifying] = useActionState<LoginState, FormData>(
-    verifyCode,
-    { step: "email" },
-  );
-
-  if (emailState.step === "email") {
-    return (
-      <form action={emailAction} className="flex flex-col gap-3">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          autoCapitalize="none"
-          required
-          placeholder="you@example.com"
-        />
-        {emailState.error ? <FormMessage>{emailState.error}</FormMessage> : null}
-        <Button type="submit" size="lg" disabled={sending}>
-          {sending ? "Sending…" : "Send code"}
-        </Button>
-      </form>
-    );
-  }
-
-  const error = codeState.step === "code" ? codeState.error : undefined;
 
   return (
-    <form action={codeAction} className="flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">
-        We sent a 6-digit code to{" "}
-        <span className="text-foreground">{emailState.email}</span>.
-      </p>
-      <input type="hidden" name="email" value={emailState.email} />
-      <Label htmlFor="code">Code</Label>
+    <form action={action} className="flex flex-col gap-3">
+      <Label htmlFor="email">Email</Label>
       <Input
-        id="code"
-        name="code"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="\d{6}"
-        maxLength={6}
+        id="email"
+        name="email"
+        type="email"
+        inputMode="email"
+        // "username" lets iOS Passwords pair the email with the saved password.
+        autoComplete="username"
+        autoCapitalize="none"
         required
-        autoFocus
-        placeholder="123456"
-        className="tracking-[0.4em]"
+        placeholder="you@example.com"
       />
-      {error ? <FormMessage>{error}</FormMessage> : null}
-      <Button type="submit" size="lg" disabled={verifying}>
-        {verifying ? "Checking…" : "Sign in"}
+      <Label htmlFor="password">Password</Label>
+      <Input
+        id="password"
+        name="password"
+        type="password"
+        autoComplete={isSignUp ? "new-password" : "current-password"}
+        minLength={isSignUp ? 8 : undefined}
+        required
+      />
+      {state.error ? <FormMessage>{state.error}</FormMessage> : null}
+      {state.notice ? <FormMessage>{state.notice}</FormMessage> : null}
+      <Button type="submit" size="lg" disabled={pending}>
+        {pending
+          ? isSignUp
+            ? "Creating…"
+            : "Signing in…"
+          : isSignUp
+            ? "Create account"
+            : "Sign in"}
       </Button>
-      <Button type="button" variant="ghost" onClick={onRestart}>
-        Use a different email
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => onSwitch(isSignUp ? "sign-in" : "sign-up")}
+      >
+        {isSignUp ? "Have an account? Sign in" : "New here? Create an account"}
       </Button>
     </form>
   );

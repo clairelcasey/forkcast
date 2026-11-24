@@ -6,7 +6,7 @@ Personal AI nutrition tracker: a Next.js PWA installed on an iPhone home screen.
 
 - Next.js (App Router, TypeScript strict) on Vercel, installable as a PWA
 - Tailwind + shadcn/ui, mobile-first (design for a 390px-wide iPhone screen)
-- Supabase: Auth (email one-time code, allowlist hook), Postgres + pgvector, row-level security
+- Supabase: Auth (email + password, allowlist hook), Postgres + pgvector, row-level security
 - Claude API (small, fast model) called only from server routes
 - USDA FoodData Central + Nutritionix/FatSecret for nutrition; Google Places; Strava API
 - Package manager: pnpm

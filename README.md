@@ -9,7 +9,7 @@ contributors (and Claude Code) are in [`CLAUDE.md`](CLAUDE.md).
 
 ## Status
 
-Milestone 1 (Foundation): Next.js PWA, Supabase email-code sign-in with an
+Milestone 1 (Foundation): Next.js PWA, Supabase email + password sign-in with an
 allowlist, per-user tables with row-level security, CI with gitleaks, Sentry.
 
 ## Stack
@@ -31,11 +31,11 @@ Database migrations live in `supabase/migrations/`. With Docker running you can
 use a local Supabase stack:
 
 ```bash
-pnpm exec supabase start        # local Postgres, Auth, and an email inbox at :54324
+pnpm exec supabase start        # local Postgres + Auth
 pnpm exec supabase db reset     # apply migrations
 ```
 
-Add your email to the allowlist before signing in:
+Add your email to the allowlist, then use "Create an account" on the login page:
 
 ```sql
 insert into public.allowed_users (email) values ('you@example.com');

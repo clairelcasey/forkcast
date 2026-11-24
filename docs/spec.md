@@ -105,7 +105,7 @@ flowchart LR
     SC["iOS Shortcut (optional)<br/>weight from Apple Health"]
   end
   subgraph Backend["Vercel + Supabase"]
-    AUTH["Supabase Auth<br/>email code, allowlist"]
+    AUTH["Supabase Auth<br/>email + password, allowlist"]
     ROUTES["Next.js server routes<br/>AI parsing, menu ranking<br/>Strava sync, API keys"]
     DB["Postgres + pgvector<br/>per-user rows (RLS)"]
   end
@@ -131,7 +131,7 @@ The phone never holds an API key. It signs in with Supabase, reads its own rows 
 | --- | --- | --- |
 | App | Next.js web app (PWA) on Vercel | Installs to the iPhone home screen; no App Store or $99 fee |
 | UI | Tailwind + shadcn/ui | Clean defaults; Claude Code writes it well |
-| Auth | Supabase Auth, email one-time code | Free; works inside a home-screen app |
+| Auth | Supabase Auth, email + password | Free; works inside a home-screen app; no email provider needed |
 | Database | Supabase Postgres + pgvector | Per-user security and meal embeddings in one place |
 | Server logic | Next.js server routes on Vercel | Keeps API keys off the phone; one deploy |
 | AI | Claude API, small fast model | Cheapest per log; hard monthly spend limit |
@@ -147,7 +147,7 @@ The phone never holds an API key. It signs in with Supabase, reads its own rows 
 
 The app supports many users but only lets me in. Opening it up later means removing one check.
 
-- **Sign-in:** a 6-digit email code through Supabase Auth, typed into the app. Not a magic link: on iPhone a link opens Safari, not the home-screen app, which keeps its own storage. Sign in with Apple needs the paid developer account, so it's out for now.
+- **Sign-in:** email and password through Supabase Auth, saved in iPhone Passwords and filled in with Face ID. Changed from a 6-digit email code (Nov 24, 2026): editing Supabase's email templates requires a custom SMTP provider, and one user who signs in once per device doesn't need email at all. Not a magic link: on iPhone a link opens Safari, not the home-screen app, which keeps its own storage. Sign in with Apple needs the paid developer account, so it's out for now. Password reset is done from the Supabase dashboard until email is set up.
 - **Allowlist:** a Supabase auth hook rejects any email not on an `allowed_users` list.
 - **Demo mode:** a separate demo account with seeded fake meals, workouts and weigh-ins, so interviews never show my real data.
 - **Distribution:** a Vercel URL. On iPhone, Share → Add to Home Screen. Interviewers just open the link and use the demo login.
@@ -204,7 +204,7 @@ V1 is done when I've logged every meal for 2 straight weeks without wanting to q
 
 **Milestones, in order**
 
-1. **Foundation:** GitHub repo with CLAUDE.md, Next.js PWA on Vercel, Supabase project, email-code sign-in with the allowlist, per-user tables, CI with gitleaks, Sentry.
+1. **Foundation:** GitHub repo with CLAUDE.md, Next.js PWA on Vercel, Supabase project, email + password sign-in with the allowlist, per-user tables, CI with gitleaks, Sentry.
 2. **Logging:** home screen with the text box and today's targets, confirm card, nutrition-database grounding, offline queue. Write the first 20 eval cases before the prompt.
 3. **Cache:** saved meals, nicknames, similar-meal suggestions, changes to saved meals.
 4. **Targets:** Strava connect and sync, day types, manual Pilates button, guardrails, manual weigh-ins with a smoothed trend.

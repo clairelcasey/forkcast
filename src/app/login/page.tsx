@@ -10,7 +10,7 @@ export default function LoginPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Forkcast</CardTitle>
-          <CardDescription>Sign in with a code sent to your email.</CardDescription>
+          <CardDescription>Sign in with your email and password.</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />
