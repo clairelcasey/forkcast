@@ -24,7 +24,9 @@ export type QueueEntry = {
   /** When it was typed; saved as logged_at. */
   queuedAt: string;
   day: DayChoice;
-  source: "ai" | "manual";
+  source: "ai" | "manual" | "cache";
+  /** The saved meal a cache log re-uses. */
+  savedMealId?: string;
   /** Null = only the line was saved; finish it when online. */
   items: QueuedItem[] | null;
   /** Set when the server rejected it (not for network errors). */

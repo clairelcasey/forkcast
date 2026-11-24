@@ -59,7 +59,8 @@ export async function signUp(
   const { data, error } = await supabase.auth.signUp(creds.data);
 
   if (error) {
-    const notAllowed = error.status === 403 || /access list/i.test(error.message);
+    const notAllowed =
+      error.status === 403 || /access list/i.test(error.message);
     if (notAllowed) return { error: "This email doesn't have access yet." };
     if (error.code === "weak_password") {
       return { error: "Pick a stronger password." };
