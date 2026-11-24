@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
+import { recentSavedMeals } from "@/server/saved-meals";
 import {
   localDate,
   remaining,
@@ -41,12 +42,15 @@ export async function Today() {
   if (!profile) return <TodaySkeleton />;
 
   const today = localDate(new Date(), profile.timezone);
-  const { data: meals } = await supabase
-    .from("meal_logs")
-    .select("id, logged_at, input_text, items, calories, protein_g")
-    .eq("user_id", user.id)
-    .eq("local_date", today)
-    .order("logged_at", { ascending: true });
+  const [{ data: meals }, recent] = await Promise.all([
+    supabase
+      .from("meal_logs")
+      .select("id, logged_at, input_text, items, calories, protein_g")
+      .eq("user_id", user.id)
+      .eq("local_date", today)
+      .order("logged_at", { ascending: true }),
+    recentSavedMeals(user.id),
+  ]);
 
   const rows = meals ?? [];
   const eaten = sumMacros(rows);
@@ -55,7 +59,17 @@ export async function Today() {
 
   return (
     <>
-      <LogMeal timeZone={profile.timezone} userId={user.id} />
+      <LogMeal
+        timeZone={profile.timezone}
+        userId={user.id}
+        recent={recent.map((m) => ({
+          id: m.id,
+          name: m.name,
+          calories: m.calories,
+          protein_g: m.protein_g,
+          items: m.items,
+        }))}
+      />
 
       <Card>
         <CardHeader>

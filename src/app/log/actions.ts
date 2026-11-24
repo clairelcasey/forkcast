@@ -9,13 +9,25 @@ import {
   mealLocalDate,
   mealTotals,
 } from "@/lib/meals/meal-math";
+import { mealItemsSchema, type MealItem } from "@/lib/meals/item-schema";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import { countParsesSince, logAiCalls } from "@/server/ai-calls";
 import { rememberFoods, type FoodEntry } from "@/server/nutrition";
-import { foodEntrySchema } from "@/server/nutrition/schema";
+import {
+  findSavedMeal,
+  recordSavedMeal,
+  markSavedMealUsed,
+} from "@/server/saved-meals";
 
 export type ParseResponse =
-  { kind: "parsed"; items: ParsedItem[] } | { kind: "manual"; reason: string };
+  | { kind: "parsed"; items: ParsedItem[] }
+  | {
+      kind: "cache";
+      savedMealId: string;
+      useCount: number;
+      items: MealItem[];
+    }
+  | { kind: "manual"; reason: string };
 
 const textSchema = z.string().trim().min(1).max(500);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -27,6 +39,17 @@ export async function parseMealText(text: string): Promise<ParseResponse> {
 
   const user = await getCurrentUser();
   if (!user) return { kind: "manual", reason: "Sign in again to log meals." };
+
+  // A meal confirmed before needs no AI call.
+  const saved = await findSavedMeal(user.id, parsed.data);
+  if (saved) {
+    return {
+      kind: "cache",
+      savedMealId: saved.id,
+      useCount: saved.useCount,
+      items: saved.items,
+    };
+  }
 
   const parser = getMealParser();
   if (!parser) {
@@ -65,32 +88,16 @@ export async function parseMealText(text: string): Promise<ParseResponse> {
   return { kind: "parsed", items: result.items };
 }
 
-const confidenceSchema = z.enum(["high", "medium", "low"]);
-
 const saveSchema = z.object({
   clientId: z.uuid(),
   inputText: z.string().trim().max(500),
-  source: z.enum(["ai", "manual"]),
+  source: z.enum(["ai", "manual", "cache"]),
+  /** The saved meal a cache log re-uses. */
+  savedMealId: z.uuid().optional(),
   day: z.enum(["today", "yesterday"]),
   /** When the meal was typed, for logs queued offline. Defaults to now. */
   loggedAt: z.iso.datetime({ offset: true }).optional(),
-  items: z
-    .array(
-      z.object({
-        name: z.string().trim().min(1).max(120),
-        quantity: z.string().trim().max(60),
-        calories: z.number().min(0).max(5000),
-        protein_g: z.number().min(0).max(500),
-        portion: z.number().min(0.1).max(10),
-        confidence: confidenceSchema.nullable(),
-        /** The nutrition-database entry an AI-parsed item came from. */
-        food: foodEntrySchema.optional(),
-        /** Amount in the food's basis unit (g or ml). */
-        amount: z.number().positive().max(3000).optional(),
-      }),
-    )
-    .min(1)
-    .max(20),
+  items: mealItemsSchema,
 });
 
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -100,7 +107,7 @@ export type SaveMealInput = z.input<typeof saveSchema>;
 
 export async function saveMealLog(
   input: SaveMealInput,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; id?: string }> {
   const parsed = saveSchema.safeParse(input);
   if (!parsed.success) return { error: "Check the items and numbers." };
   const meal = parsed.data;
@@ -127,23 +134,46 @@ export async function saveMealLog(
   }
 
   const totals = mealTotals(meal.items);
-  const { error } = await supabase.from("meal_logs").insert({
-    user_id: user.id,
-    client_id: meal.clientId,
-    logged_at: loggedAt.toISOString(),
-    timezone: profile.timezone,
-    local_date: mealLocalDate(loggedAt, profile.timezone, meal.day),
-    input_text: meal.inputText || null,
-    items: meal.items,
-    calories: totals.calories,
-    protein_g: totals.protein_g,
-    source: meal.source,
-    confidence: meal.source === "ai" ? mealConfidence(meal.items) : null,
-  });
+  const { data: inserted, error } = await supabase
+    .from("meal_logs")
+    .insert({
+      user_id: user.id,
+      client_id: meal.clientId,
+      logged_at: loggedAt.toISOString(),
+      timezone: profile.timezone,
+      local_date: mealLocalDate(loggedAt, profile.timezone, meal.day),
+      input_text: meal.inputText || null,
+      items: meal.items,
+      calories: totals.calories,
+      protein_g: totals.protein_g,
+      source: meal.source,
+      confidence: meal.source === "manual" ? null : mealConfidence(meal.items),
+    })
+    .select("id")
+    .single();
 
-  // 23505 = this client_id was already saved (a retried tap): treat as saved.
-  if (error && error.code !== "23505") {
-    return { error: "Couldn't save. Try again." };
+  // 23505 = this client_id was already saved (a retried tap): treat as saved,
+  // without counting the saved meal twice.
+  if (error?.code === "23505") return {};
+  if (error || !inserted) return { error: "Couldn't save. Try again." };
+
+  // Every confirmed meal becomes (or re-uses) a saved meal.
+  let savedMealId =
+    meal.source === "cache" && meal.savedMealId
+      ? await markSavedMealUsed(meal.savedMealId)
+      : null;
+  if (!savedMealId && meal.inputText) {
+    savedMealId = await recordSavedMeal({
+      text: meal.inputText,
+      items: meal.items,
+      ...totals,
+    });
+  }
+  if (savedMealId) {
+    await supabase
+      .from("meal_logs")
+      .update({ saved_meal_id: savedMealId })
+      .eq("id", inserted.id);
   }
 
   // Remember the database entries behind a confirmed meal (foods cache).
@@ -157,5 +187,5 @@ export async function saveMealLog(
     console.error("foods upsert failed", remembered.error.code);
 
   refresh();
-  return {};
+  return { id: inserted.id };
 }

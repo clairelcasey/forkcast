@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUp, Plus, X } from "lucide-react";
 import type { Confidence, ParsedItem } from "@/ai/types";
 import type { FoodEntry } from "@/server/nutrition/types";
+import type { MealItem } from "@/lib/meals/item-schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import {
   type QueueEntry,
 } from "@/lib/offline/queue";
 import { cn } from "@/lib/utils";
+import { deleteMealLog } from "../meals/actions";
 import { parseMealText, saveMealLog } from "./actions";
 
 type DraftItem = {
@@ -45,9 +47,20 @@ type Draft = {
   typedAt: string;
   /** Finishing a line that was queued offline. */
   fromQueue: boolean;
-  source: "ai" | "manual";
+  source: "ai" | "manual" | "cache";
+  /** The saved meal a cache draft re-uses. */
+  savedMealId?: string;
   note: string | null;
   items: DraftItem[];
+};
+
+/** A saved meal offered for one-tap re-logging. */
+export type RecentMeal = {
+  id: string;
+  name: string;
+  calories: number;
+  protein_g: number;
+  items: MealItem[];
 };
 
 const newKey = () => crypto.randomUUID();
@@ -75,6 +88,13 @@ function toDraftItem(item: ParsedItem): DraftItem {
     amount: item.amount,
   };
 }
+
+/** Saved items keep their portions (a saved "split fries" stays ½). */
+function savedToDraftItem(item: MealItem): DraftItem {
+  return { ...item, key: newKey() };
+}
+
+const timesLabel = (n: number) => (n === 1 ? "once" : `${n} times`);
 
 const toQueuedItems = (items: DraftItem[]): QueuedItem[] =>
   items.map((i) => ({
@@ -111,9 +131,11 @@ function useOnline() {
 export function LogMeal({
   timeZone,
   userId,
+  recent = [],
 }: {
   timeZone: string;
   userId: string;
+  recent?: RecentMeal[];
 }) {
   const router = useRouter();
   const online = useOnline();
@@ -121,6 +143,14 @@ export function LogMeal({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [pending, startTransition] = useTransition();
+  const [flash, setFlash] = useState<Flash | null>(null);
+
+  // The "Logged … Undo" note fades after a few seconds.
+  useEffect(() => {
+    if (!flash) return;
+    const timer = setTimeout(() => setFlash(null), 8000);
+    return () => clearTimeout(timer);
+  }, [flash]);
 
   const reloadQueue = useCallback(async () => {
     try {
@@ -143,6 +173,7 @@ export function LogMeal({
           clientId: e.clientId,
           inputText: e.text,
           source: e.source,
+          savedMealId: e.savedMealId,
           day: e.day,
           loggedAt: e.queuedAt,
           items: e.items,
@@ -198,17 +229,26 @@ export function LogMeal({
     startTransition(async () => {
       try {
         const result = await parseMealText(inputText);
-        setDraft(
-          result.kind === "parsed"
-            ? {
-                ...base,
-                inputText,
-                source: "ai",
-                note: null,
-                items: result.items.map(toDraftItem),
-              }
-            : manualDraft(result.reason),
-        );
+        if (result.kind === "parsed") {
+          setDraft({
+            ...base,
+            inputText,
+            source: "ai",
+            note: null,
+            items: result.items.map(toDraftItem),
+          });
+        } else if (result.kind === "cache") {
+          setDraft({
+            ...base,
+            inputText,
+            source: "cache",
+            savedMealId: result.savedMealId,
+            note: `Saved meal · logged ${timesLabel(result.useCount)}`,
+            items: result.items.map(savedToDraftItem),
+          });
+        } else {
+          setDraft(manualDraft(result.reason));
+        }
       } catch {
         // The request failed: treat it as offline.
         setDraft(manualDraft(OFFLINE_NOTE));
@@ -234,6 +274,66 @@ export function LogMeal({
       typedAt: entry.queuedAt,
       fromQueue: true,
     });
+  }
+
+  /** One tap logs a recent meal as is; late at night it asks for the day. */
+  function relog(meal: RecentMeal) {
+    if (draft || pending) return;
+    const base = {
+      clientId: crypto.randomUUID(),
+      typedAt: new Date().toISOString(),
+      fromQueue: false,
+    };
+    if (isLateNight(new Date(base.typedAt), timeZone)) {
+      setDraft({
+        ...base,
+        inputText: meal.name,
+        source: "cache",
+        savedMealId: meal.id,
+        note: "Saved meal",
+        items: meal.items.map(savedToDraftItem),
+      });
+      return;
+    }
+    const entry: Omit<QueueEntry, "userId"> = {
+      clientId: base.clientId,
+      text: meal.name,
+      queuedAt: base.typedAt,
+      day: "today",
+      source: "cache",
+      savedMealId: meal.id,
+      items: meal.items,
+    };
+    startTransition(async () => {
+      if (!navigator.onLine) {
+        await enqueue(entry);
+        setFlash({ name: meal.name, logId: null });
+        return;
+      }
+      try {
+        const result = await saveMealLog({
+          clientId: entry.clientId,
+          inputText: entry.text,
+          source: "cache",
+          savedMealId: meal.id,
+          day: "today",
+          items: meal.items,
+        });
+        setFlash(
+          result.error
+            ? { name: meal.name, logId: null, error: result.error }
+            : { name: meal.name, logId: result.id ?? null },
+        );
+      } catch {
+        await enqueue(entry);
+        setFlash({ name: meal.name, logId: null });
+      }
+    });
+  }
+
+  function undo(logId: string) {
+    setFlash(null);
+    startTransition(() => deleteMealLog(logId));
   }
 
   async function discard(entry: QueueEntry) {
@@ -270,6 +370,50 @@ export function LogMeal({
         <p className="-mt-3 text-sm text-muted-foreground">
           Offline. Meals you save will sync when you&apos;re back online.
         </p>
+      ) : null}
+
+      {flash ? (
+        <p
+          role="status"
+          className="-mt-3 flex items-center gap-1 text-sm text-muted-foreground"
+        >
+          <span className="min-w-0 truncate">
+            {flash.error ?? `Logged ${flash.name}.`}
+          </span>
+          {flash.logId ? (
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto shrink-0 p-0"
+              onClick={() => undo(flash.logId!)}
+            >
+              Undo
+            </Button>
+          ) : null}
+        </p>
+      ) : null}
+
+      {!draft && recent.length > 0 ? (
+        <section aria-label="Recent meals">
+          <h2 className="mb-2 text-sm font-medium">Log again</h2>
+          <ul className="flex flex-wrap gap-2">
+            {recent.map((meal) => (
+              <li key={meal.id} className="max-w-full">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => relog(meal)}
+                  className="flex h-11 max-w-full items-center gap-1.5 rounded-full border bg-background px-4 text-sm transition-colors hover:bg-accent disabled:opacity-50"
+                >
+                  <span className="truncate">{meal.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                    {Math.round(meal.calories)} kcal
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {draft ? (
@@ -437,6 +581,7 @@ function ConfirmCard({
     queuedAt: draft.typedAt,
     day: day ?? "today",
     source: draft.source,
+    savedMealId: draft.source === "cache" ? draft.savedMealId : undefined,
     items,
   });
 
@@ -453,6 +598,7 @@ function ConfirmCard({
           clientId: draft.clientId,
           inputText: draft.inputText,
           source: draft.source,
+          savedMealId: draft.source === "cache" ? draft.savedMealId : undefined,
           day,
           // Queued lines keep the time they were typed.
           loggedAt: draft.fromQueue ? draft.typedAt : undefined,
@@ -600,10 +746,18 @@ function ParsedItemRow({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{item.name}</p>
           <p className="text-xs text-muted-foreground tabular-nums">
-            {item.quantity}
-            {item.portion !== 1
-              ? ` × ${formatPortion(item.portion)}`
-              : ""} · {macros.calories} kcal · {macros.protein_g}g protein
+            {[
+              [
+                item.quantity,
+                item.portion !== 1 ? `× ${formatPortion(item.portion)}` : "",
+              ]
+                .filter(Boolean)
+                .join(" "),
+              `${macros.calories} kcal`,
+              `${macros.protein_g}g protein`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           {item.confidence === "low" ? (
             <p className="text-xs text-muted-foreground">
@@ -739,3 +893,5 @@ function formatPortion(p: number) {
 }
 
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
+
+type Flash = { name: string; logId: string | null; error?: string };

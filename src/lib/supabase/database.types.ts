@@ -387,6 +387,7 @@ export type Database = {
           id: string;
           items: NonNullable<Json>;
           last_used_at: string | null;
+          match_key: string | null;
           name: string;
           nickname: string | null;
           place_id: string | null;
@@ -408,6 +409,7 @@ export type Database = {
           id?: string;
           items?: NonNullable<Json>;
           last_used_at?: string | null;
+          match_key?: string | null;
           name: string;
           nickname?: string | null;
           place_id?: string | null;
@@ -428,6 +430,7 @@ export type Database = {
           id?: string;
           items?: NonNullable<Json>;
           last_used_at?: string | null;
+          match_key?: string | null;
           name?: string;
           nickname?: string | null;
           place_id?: string | null;
@@ -572,6 +575,17 @@ export type Database = {
     };
     Functions: {
       hook_before_user_created: { Args: { event: Json }; Returns: Json };
+      record_saved_meal: {
+        Args: {
+          p_calories: number;
+          p_items: Json;
+          p_match_key: string;
+          p_name: string;
+          p_protein_g: number;
+        };
+        Returns: string;
+      };
+      use_saved_meal: { Args: { p_id: string }; Returns: string };
     };
     Enums: {
       [_ in never]: never;
