@@ -48,16 +48,35 @@ type Draft = {
   /** Finishing a line that was queued offline. */
   fromQueue: boolean;
   source: "ai" | "manual" | "cache";
-  /** The saved meal a cache draft re-uses. */
+  /** The saved meal this draft came from (or is re-estimating). */
   savedMealId?: string;
+  /** The saved meal as the card opened, to notice edits to it. */
+  saved?: SavedContext;
+  /** Modifiers applied to the saved meal ("no rice"). */
+  modifiers?: string[];
   note: string | null;
   items: DraftItem[];
 };
+
+type SavedContext = {
+  name: string;
+  nickname: string | null;
+  snapshot: string;
+  /** Re-estimating: saving always makes a new version. */
+  reestimate?: boolean;
+};
+
+/** What makes two versions of a meal different. */
+const itemsSnapshot = (items: DraftItem[]) =>
+  JSON.stringify(
+    items.map((i) => [i.name, i.portion, i.calories, i.protein_g]),
+  );
 
 /** A saved meal offered for one-tap re-logging. */
 export type RecentMeal = {
   id: string;
   name: string;
+  nickname: string | null;
   calories: number;
   protein_g: number;
   items: MealItem[];
@@ -106,6 +125,9 @@ const toQueuedItems = (items: DraftItem[]): QueuedItem[] =>
     confidence: i.confidence,
     ...(i.food ? { food: i.food, amount: i.amount } : {}),
   }));
+
+const REESTIMATE_NOTE =
+  "Re-estimated. Saving updates the saved meal; past logs keep their numbers.";
 
 const OFFLINE_NOTE = "You're offline. Enter the numbers, or finish it later.";
 
@@ -174,6 +196,9 @@ export function LogMeal({
           inputText: e.text,
           source: e.source,
           savedMealId: e.savedMealId,
+          savedMealChange: e.savedMealChange,
+          nickname: e.nickname,
+          modifiers: e.modifiers,
           day: e.day,
           loggedAt: e.queuedAt,
           items: e.items,
@@ -214,9 +239,11 @@ export function LogMeal({
   function openDraft(
     inputText: string,
     base: Pick<Draft, "clientId" | "typedAt" | "fromQueue">,
+    reestimate?: Pick<Draft, "savedMealId" | "saved">,
   ) {
     const manualDraft = (note: string): Draft => ({
       ...base,
+      ...reestimate,
       inputText,
       source: "manual",
       note,
@@ -228,23 +255,43 @@ export function LogMeal({
     }
     startTransition(async () => {
       try {
-        const result = await parseMealText(inputText);
+        const result = await parseMealText(inputText, {
+          reestimate: Boolean(reestimate),
+        });
         if (result.kind === "parsed") {
           setDraft({
             ...base,
+            ...reestimate,
             inputText,
             source: "ai",
-            note: null,
+            note: reestimate ? REESTIMATE_NOTE : null,
             items: result.items.map(toDraftItem),
           });
         } else if (result.kind === "cache") {
+          const items = result.items.map(savedToDraftItem);
           setDraft({
             ...base,
             inputText,
             source: "cache",
             savedMealId: result.savedMealId,
-            note: `Saved meal · logged ${timesLabel(result.useCount)}`,
-            items: result.items.map(savedToDraftItem),
+            saved: {
+              name: result.name,
+              nickname: result.nickname,
+              snapshot: itemsSnapshot(items),
+            },
+            modifiers: result.modifiers,
+            note: [
+              `Saved meal · logged ${timesLabel(result.useCount)}`,
+              result.modifiers.length
+                ? `With ${result.modifiers.join(", ")}`
+                : "",
+              result.unknownModifiers.length
+                ? `Couldn't apply "${result.unknownModifiers.join(", ")}". Adjust below.`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(". "),
+            items,
           });
         } else {
           setDraft(manualDraft(result.reason));
@@ -290,6 +337,11 @@ export function LogMeal({
         inputText: meal.name,
         source: "cache",
         savedMealId: meal.id,
+        saved: {
+          name: meal.name,
+          nickname: meal.nickname,
+          snapshot: itemsSnapshot(meal.items.map(savedToDraftItem)),
+        },
         note: "Saved meal",
         items: meal.items.map(savedToDraftItem),
       });
@@ -329,6 +381,23 @@ export function LogMeal({
         setFlash({ name: meal.name, logId: null });
       }
     });
+  }
+
+  /** Estimates a saved meal again; saving it makes a new version. */
+  function reestimate(current: Draft) {
+    if (!current.savedMealId || !current.saved) return;
+    openDraft(
+      current.saved.name,
+      {
+        clientId: current.clientId,
+        typedAt: current.typedAt,
+        fromQueue: current.fromQueue,
+      },
+      {
+        savedMealId: current.savedMealId,
+        saved: { ...current.saved, reestimate: true },
+      },
+    );
   }
 
   function undo(logId: string) {
@@ -423,6 +492,7 @@ export function LogMeal({
           draft={draft}
           timeZone={timeZone}
           onChange={setDraft}
+          onReestimate={() => reestimate(draft)}
           onQueue={async (entry) => {
             await enqueue(entry);
             setDraft(null);
@@ -519,6 +589,7 @@ function ConfirmCard({
   draft,
   timeZone,
   onChange,
+  onReestimate,
   onQueue,
   onDone,
   onCancel,
@@ -526,6 +597,7 @@ function ConfirmCard({
   draft: Draft;
   timeZone: string;
   onChange: (draft: Draft) => void;
+  onReestimate: () => void;
   onQueue: (entry: Omit<QueueEntry, "userId">) => Promise<void>;
   onDone: () => Promise<void>;
   onCancel: () => void;
@@ -537,6 +609,22 @@ function ConfirmCard({
     isLateNight(new Date(draft.typedAt), timeZone),
   );
   const [day, setDay] = useState<DayChoice | null>(askDay ? null : "today");
+  const [nickname, setNicknameText] = useState(draft.saved?.nickname ?? "");
+  const [change, setChange] = useState<"none" | "version" | null>(null);
+
+  // Editing a saved meal asks whether the edit is for this log only.
+  const editedSaved =
+    Boolean(draft.savedMealId && draft.saved && !draft.saved.reestimate) &&
+    itemsSnapshot(draft.items) !== draft.saved?.snapshot;
+  const savedMealChange: "none" | "version" = draft.saved?.reestimate
+    ? "version"
+    : editedSaved
+      ? (change ?? "none")
+      : "none";
+  const nicknameChange =
+    nickname.trim() === (draft.saved?.nickname ?? "")
+      ? undefined
+      : nickname.trim();
 
   const manual = draft.source === "manual";
   const totals = mealTotals(draft.items);
@@ -545,6 +633,7 @@ function ConfirmCard({
     draft.items.length > 0 &&
     draft.items.every((i) => i.name.trim()) &&
     day !== null &&
+    (!editedSaved || change !== null) &&
     !saving;
 
   const updateItem = (key: string, patch: Partial<DraftItem>) =>
@@ -581,7 +670,10 @@ function ConfirmCard({
     queuedAt: draft.typedAt,
     day: day ?? "today",
     source: draft.source,
-    savedMealId: draft.source === "cache" ? draft.savedMealId : undefined,
+    savedMealId: draft.savedMealId,
+    savedMealChange,
+    nickname: nicknameChange,
+    modifiers: draft.modifiers,
     items,
   });
 
@@ -598,7 +690,10 @@ function ConfirmCard({
           clientId: draft.clientId,
           inputText: draft.inputText,
           source: draft.source,
-          savedMealId: draft.source === "cache" ? draft.savedMealId : undefined,
+          savedMealId: draft.savedMealId,
+          savedMealChange,
+          nickname: nicknameChange,
+          modifiers: draft.modifiers,
           day,
           // Queued lines keep the time they were typed.
           loggedAt: draft.fromQueue ? draft.typedAt : undefined,
@@ -682,6 +777,49 @@ function ConfirmCard({
           </span>
         </p>
 
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor={`${draft.clientId}-nick`}
+            className="text-xs text-muted-foreground"
+          >
+            Nickname (optional)
+          </label>
+          <Input
+            id={`${draft.clientId}-nick`}
+            value={nickname}
+            onChange={(e) => setNicknameText(e.target.value)}
+            placeholder="e.g. usual bowl"
+            maxLength={40}
+            autoComplete="off"
+          />
+        </div>
+
+        {editedSaved ? (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 text-sm">
+              Save this change to the saved meal?
+            </legend>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  ["none", "Just this time"],
+                  ["version", "Update saved meal"],
+                ] as const
+              ).map(([value, label]) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={change === value ? "default" : "outline"}
+                  aria-pressed={change === value}
+                  onClick={() => setChange(value)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
+
         {askDay ? (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-sm">Which day is this for?</legend>
@@ -713,6 +851,16 @@ function ConfirmCard({
         {!manual ? (
           <Button type="button" variant="ghost" onClick={switchToManual}>
             Enter numbers instead
+          </Button>
+        ) : null}
+        {draft.source === "cache" && draft.saved ? (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={saving}
+            onClick={onReestimate}
+          >
+            Re-estimate
           </Button>
         ) : null}
         {offline && !draft.fromQueue ? (

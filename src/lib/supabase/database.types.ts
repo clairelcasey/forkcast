@@ -586,6 +586,15 @@ export type Database = {
         Returns: string;
       };
       use_saved_meal: { Args: { p_id: string }; Returns: string };
+      version_saved_meal: {
+        Args: {
+          p_calories: number;
+          p_id: string;
+          p_items: Json;
+          p_protein_g: number;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

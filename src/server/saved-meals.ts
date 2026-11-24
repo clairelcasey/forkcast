@@ -1,5 +1,6 @@
 import "server-only";
 import { mealItemsSchema, type MealItem } from "@/lib/meals/item-schema";
+import { matchNickname } from "@/lib/meals/modifiers";
 import { mealMatchKey } from "@/lib/meals/normalize";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 export type SavedMeal = {
   id: string;
   name: string;
+  nickname: string | null;
   items: MealItem[];
   calories: number;
   protein_g: number;
@@ -16,11 +18,13 @@ export type SavedMeal = {
   lastUsedAt: string | null;
 };
 
-const COLUMNS = "id, name, items, calories, protein_g, use_count, last_used_at";
+const COLUMNS =
+  "id, name, nickname, items, calories, protein_g, use_count, last_used_at";
 
 type Row = {
   id: string;
   name: string;
+  nickname: string | null;
   items: unknown;
   calories: number;
   protein_g: number;
@@ -35,6 +39,7 @@ function toSavedMeal(row: Row): SavedMeal | null {
   return {
     id: row.id,
     name: row.name,
+    nickname: row.nickname,
     items: items.data,
     calories: Number(row.calories),
     protein_g: Number(row.protein_g),
@@ -112,4 +117,82 @@ export async function markSavedMealUsed(id: string): Promise<string | null> {
   const { data, error } = await supabase.rpc("use_saved_meal", { p_id: id });
   if (error) console.error("use_saved_meal failed", error.code);
   return data ?? null;
+}
+
+/**
+ * The saved meal whose nickname starts the line ("usual bowl, no rice"), and
+ * the modifier text after it.
+ */
+export async function findByNickname(
+  userId: string,
+  text: string,
+): Promise<{ meal: SavedMeal; rest: string } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("saved_meals")
+    .select(COLUMNS)
+    .eq("user_id", userId)
+    .not("nickname", "is", null)
+    .is("superseded_by", null)
+    .eq("archived", false);
+  const rows = data ?? [];
+  const match = matchNickname(
+    text,
+    rows.map((r) => r.nickname!),
+  );
+  if (!match) return null;
+  const row = rows.find((r) => r.nickname === match.nickname);
+  const meal = row ? toSavedMeal(row) : null;
+  return meal ? { meal, rest: match.rest } : null;
+}
+
+/**
+ * New version of a saved meal ("update going forward", "re-estimate"). Old
+ * logs keep their own numbers. Returns the new version's id.
+ */
+export async function versionSavedMeal(
+  id: string,
+  meal: { items: MealItem[]; calories: number; protein_g: number },
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("version_saved_meal", {
+    p_id: id,
+    p_items: meal.items,
+    p_calories: meal.calories,
+    p_protein_g: meal.protein_g,
+  });
+  if (error) console.error("version_saved_meal failed", error.code);
+  return data ?? null;
+}
+
+/** Whether another active saved meal already uses this nickname. */
+export async function nicknameTaken(
+  userId: string,
+  nickname: string,
+  exceptMatchKey: string,
+  exceptId?: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("saved_meals")
+    .select("id, nickname, match_key")
+    .eq("user_id", userId)
+    .ilike("nickname", nickname.replace(/[%_\\]/g, "\\$&"))
+    .is("superseded_by", null)
+    .eq("archived", false);
+  return (data ?? []).some(
+    (r) =>
+      r.nickname?.toLowerCase() === nickname.toLowerCase() &&
+      r.id !== exceptId &&
+      r.match_key !== exceptMatchKey,
+  );
+}
+
+export async function setNickname(id: string, nickname: string | null) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("saved_meals")
+    .update({ nickname })
+    .eq("id", id);
+  return { error };
 }
