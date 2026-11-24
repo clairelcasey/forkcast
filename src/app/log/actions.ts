@@ -2,19 +2,23 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { getMealParser } from "@/ai/parser";
-import type { ParsedItem } from "@/ai/types";
+import { dailyParseLimit, getMealParser } from "@/ai/parser";
+import type { ParsedItem, ParseResult } from "@/ai/types";
 import {
   mealConfidence,
   mealLocalDate,
   mealTotals,
 } from "@/lib/meals/meal-math";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
+import { countParsesSince, logAiCalls } from "@/server/ai-calls";
+import { rememberFoods, type FoodEntry } from "@/server/nutrition";
+import { foodEntrySchema } from "@/server/nutrition/schema";
 
 export type ParseResponse =
   { kind: "parsed"; items: ParsedItem[] } | { kind: "manual"; reason: string };
 
 const textSchema = z.string().trim().min(1).max(500);
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Turns one typed line into draft items, or asks for manual entry. */
 export async function parseMealText(text: string): Promise<ParseResponse> {
@@ -29,11 +33,33 @@ export async function parseMealText(text: string): Promise<ParseResponse> {
     return { kind: "manual", reason: "Enter the numbers for this meal." };
   }
 
-  const result = await parser.parse({ text: parsed.data });
-  if (!result.ok || result.items.length === 0) {
+  // Per-user cap on AI calls (rolling 24 hours).
+  const since = new Date(Date.now() - DAY_MS).toISOString();
+  if ((await countParsesSince(user.id, since)) >= dailyParseLimit()) {
+    return {
+      kind: "manual",
+      reason: "That's the AI limit for today. Enter the numbers.",
+    };
+  }
+
+  let result: ParseResult;
+  try {
+    result = await parser.parse({ text: parsed.data });
+  } catch {
     return {
       kind: "manual",
       reason: "Couldn't read that one. Enter the numbers.",
+    };
+  }
+  await logAiCalls(user.id, result.usage);
+
+  if (!result.ok) {
+    const missing = result.error.match(/^no_match: (.+)$/)?.[1];
+    return {
+      kind: "manual",
+      reason: missing
+        ? `Couldn't find ${missing} in the nutrition database. Enter the numbers.`
+        : "Couldn't read that one. Enter the numbers.",
     };
   }
   return { kind: "parsed", items: result.items };
@@ -57,6 +83,10 @@ const saveSchema = z.object({
         protein_g: z.number().min(0).max(500),
         portion: z.number().min(0.1).max(10),
         confidence: confidenceSchema.nullable(),
+        /** The nutrition-database entry an AI-parsed item came from. */
+        food: foodEntrySchema.optional(),
+        /** Amount in the food's basis unit (g or ml). */
+        amount: z.number().positive().max(3000).optional(),
       }),
     )
     .min(1)
@@ -115,6 +145,16 @@ export async function saveMealLog(
   if (error && error.code !== "23505") {
     return { error: "Couldn't save. Try again." };
   }
+
+  // Remember the database entries behind a confirmed meal (foods cache).
+  const foods = new Map<string, FoodEntry>();
+  for (const item of meal.items) {
+    if (item.food)
+      foods.set(`${item.food.provider}:${item.food.providerId}`, item.food);
+  }
+  const remembered = await rememberFoods(user.id, [...foods.values()]);
+  if (remembered.error)
+    console.error("foods upsert failed", remembered.error.code);
 
   refresh();
   return {};

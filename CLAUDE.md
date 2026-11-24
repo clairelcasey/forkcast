@@ -36,7 +36,7 @@ Personal AI nutrition tracker: a Next.js PWA installed on an iPhone home screen.
 - `pnpm typecheck`, `pnpm lint`
 - `pnpm test` — unit tests (Vitest; files named `*.test.ts` next to the code)
 - `pnpm build` — production build (CI runs it with placeholder Supabase env)
-- `pnpm eval [--parser stub] [--only id,id]` — run every case in `evals/cases/` through a meal parser; prints metrics and writes `evals/results/latest.md` for the PR
+- `pnpm eval [--parser stub|claude] [--only id,id]` — run every case in `evals/cases/` through a meal parser; prints metrics and writes `evals/results/latest.md` for the PR. `--parser claude` calls the real API (needs `ANTHROPIC_API_KEY` and `USDA_API_KEY`) and costs money; the stub only checks the harness
 - `pnpm exec supabase start` / `pnpm exec supabase db reset` — local Supabase stack (needs Docker); applies `supabase/migrations/`
 - `pnpm db:types` — regenerate `src/lib/supabase/database.types.ts` from the local database
 
@@ -50,4 +50,5 @@ Personal AI nutrition tracker: a Next.js PWA installed on an iPhone home screen.
 - Plain-code logic (day types, targets, guardrails) gets unit tests.
 - Eval cases (`evals/cases/<id>.json`, schema in `evals/schema.ts`) use only public chain/packaged nutrition or made-up home meals. Totals must equal the sum of items. Set `checked_on` only after checking the numbers against the source.
 - Offline: `public/sw.js` caches the app shell and the last home page (production only; cleared on sign-out). Meals saved offline wait in IndexedDB (`src/lib/offline/queue.ts`) and sync through `saveMealLog`; `client_id` makes retries safe. The server stays the source of truth.
+- Meal parsing (`src/ai/claude-parser.ts`): Claude splits the line into search queries, code searches USDA (`src/server/nutrition/`), Claude picks a candidate id and an amount, code computes the numbers. Prompts in `src/ai/prompts.ts` stay static so they cache; model and prices in `src/ai/models.ts`.
 - The allowlist is `public.allowed_users`, enforced by the `hook_before_user_created` auth hook.

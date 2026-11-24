@@ -2,6 +2,7 @@
 // The server is the source of truth: entries are deleted once saved.
 
 import type { DayChoice } from "@/lib/meals/meal-math";
+import type { FoodEntry } from "@/server/nutrition/types";
 
 export type QueuedItem = {
   name: string;
@@ -10,6 +11,9 @@ export type QueuedItem = {
   protein_g: number;
   portion: number;
   confidence: "high" | "medium" | "low" | null;
+  /** The nutrition-database entry behind an AI-parsed item. */
+  food?: FoodEntry;
+  amount?: number;
 };
 
 export type QueueEntry = {

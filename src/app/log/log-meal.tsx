@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUp, Plus, X } from "lucide-react";
 import type { Confidence, ParsedItem } from "@/ai/types";
+import type { FoodEntry } from "@/server/nutrition/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,9 @@ type DraftItem = {
   protein_g: number;
   portion: number;
   confidence: Confidence | null;
+  /** Database entry behind an AI-parsed item; dropped on manual entry. */
+  food?: FoodEntry;
+  amount?: number;
 };
 
 type Draft = {
@@ -67,6 +71,8 @@ function toDraftItem(item: ParsedItem): DraftItem {
     protein_g: item.protein_g,
     portion: 1,
     confidence: item.confidence ?? null,
+    food: item.food,
+    amount: item.amount,
   };
 }
 
@@ -78,6 +84,7 @@ const toQueuedItems = (items: DraftItem[]): QueuedItem[] =>
     protein_g: i.protein_g,
     portion: i.portion,
     confidence: i.confidence,
+    ...(i.food ? { food: i.food, amount: i.amount } : {}),
   }));
 
 const OFFLINE_NOTE = "You're offline. Enter the numbers, or finish it later.";
@@ -416,6 +423,9 @@ function ConfirmCard({
         ...itemMacros(i),
         portion: 1,
         confidence: null,
+        // Typed numbers no longer come from the database entry.
+        food: undefined,
+        amount: undefined,
       })),
     });
 
