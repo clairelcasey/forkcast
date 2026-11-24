@@ -1,0 +1,130 @@
+{
+  "totalHits": 296581,
+  "currentPage": 1,
+  "totalPages": 98861,
+  "foods": [
+    {
+      "fdcId": 2369614,
+      "description": "CHOCOLATE SEA SALT ALMONDS, CHOCOLATE SEA SALT",
+      "dataType": "Branded",
+      "foodCategory": "Popcorn, Peanuts, Seeds & Related Snacks",
+      "brandOwner": "Publix Super Markets, Inc.",
+      "brandName": "PBULIX",
+      "servingSize": 31.0,
+      "servingSizeUnit": "g",
+      "householdServingFullText": "9 pieces",
+      "foodNutrients": [
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "value": 6.45
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "value": 35.5
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "value": 51.6
+        },
+        {
+          "nutrientId": 1008,
+          "nutrientName": "Energy",
+          "nutrientNumber": "208",
+          "unitName": "KCAL",
+          "value": 484
+        }
+      ]
+    },
+    {
+      "fdcId": 2663640,
+      "description": "CHOCOLATE SEA SALT BAR, CHOCOLATE SEA SALT",
+      "dataType": "Branded",
+      "foodCategory": "Snack, Energy & Granola Bars",
+      "brandOwner": "IQ BAR, Inc.",
+      "brandName": "IQBAR",
+      "servingSize": 45.0,
+      "servingSizeUnit": "GRM",
+      "householdServingFullText": "",
+      "foodNutrients": [
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "value": 26.7
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "value": 31.1
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "value": 24.4
+        },
+        {
+          "nutrientId": 1008,
+          "nutrientName": "Energy",
+          "nutrientNumber": "208",
+          "unitName": "KCAL",
+          "value": 400
+        }
+      ]
+    },
+    {
+      "fdcId": 2653556,
+      "description": "CHOCOLATE SEA SALT BAR, CHOCOLATE SEA SALT",
+      "dataType": "Branded",
+      "foodCategory": "Snack, Energy & Granola Bars",
+      "brandOwner": "Chicago Bar Company ",
+      "brandName": "RXBAR",
+      "servingSize": 52.0,
+      "servingSizeUnit": "GRM",
+      "householdServingFullText": "1 bar",
+      "foodNutrients": [
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "value": 23.1
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "value": 15.4
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "value": 44.2
+        },
+        {
+          "nutrientId": 1008,
+          "nutrientName": "Energy",
+          "nutrientNumber": "208",
+          "unitName": "KCAL",
+          "value": 385
+        }
+      ]
+    }
+  ]
+}
