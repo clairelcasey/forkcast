@@ -49,4 +49,5 @@ Personal AI nutrition tracker: a Next.js PWA installed on an iPhone home screen.
 - **After every migration**, run `pnpm exec supabase db reset` then `pnpm db:types`, and commit the regenerated `database.types.ts` with the migration. Both Supabase clients are typed with it, so a stale file hides schema mistakes.
 - Plain-code logic (day types, targets, guardrails) gets unit tests.
 - Eval cases (`evals/cases/<id>.json`, schema in `evals/schema.ts`) use only public chain/packaged nutrition or made-up home meals. Totals must equal the sum of items. Set `checked_on` only after checking the numbers against the source.
+- Offline: `public/sw.js` caches the app shell and the last home page (production only; cleared on sign-out). Meals saved offline wait in IndexedDB (`src/lib/offline/queue.ts`) and sync through `saveMealLog`; `client_id` makes retries safe. The server stays the source of truth.
 - The allowlist is `public.allowed_users`, enforced by the `hook_before_user_created` auth hook.

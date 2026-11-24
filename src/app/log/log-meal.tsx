@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowUp, Plus, X } from "lucide-react";
 import type { Confidence, ParsedItem } from "@/ai/types";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,12 @@ import {
   PORTION_CHIPS,
   type DayChoice,
 } from "@/lib/meals/meal-math";
+import {
+  idbQueue,
+  syncQueue,
+  type QueuedItem,
+  type QueueEntry,
+} from "@/lib/offline/queue";
 import { cn } from "@/lib/utils";
 import { parseMealText, saveMealLog } from "./actions";
 
@@ -30,6 +37,10 @@ type DraftItem = {
 type Draft = {
   clientId: string;
   inputText: string;
+  /** When the line was typed (ISO). Saved as logged_at for queued meals. */
+  typedAt: string;
+  /** Finishing a line that was queued offline. */
+  fromQueue: boolean;
   source: "ai" | "manual";
   note: string | null;
   items: DraftItem[];
@@ -59,37 +70,168 @@ function toDraftItem(item: ParsedItem): DraftItem {
   };
 }
 
-/** The log box and, after submitting, the editable confirm card. */
-export function LogMeal({ timeZone }: { timeZone: string }) {
+const toQueuedItems = (items: DraftItem[]): QueuedItem[] =>
+  items.map((i) => ({
+    name: i.name,
+    quantity: i.quantity,
+    calories: i.calories,
+    protein_g: i.protein_g,
+    portion: i.portion,
+    confidence: i.confidence,
+  }));
+
+const OFFLINE_NOTE = "You're offline. Enter the numbers, or finish it later.";
+
+function useOnline() {
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  return online;
+}
+
+/**
+ * The log box, the editable confirm card, and the offline queue: meals
+ * saved without a connection wait in IndexedDB and sync when back online.
+ */
+export function LogMeal({
+  timeZone,
+  userId,
+}: {
+  timeZone: string;
+  userId: string;
+}) {
+  const router = useRouter();
+  const online = useOnline();
   const [text, setText] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [pending, startTransition] = useTransition();
+
+  const reloadQueue = useCallback(async () => {
+    try {
+      setQueue(await idbQueue.list(userId));
+    } catch {
+      // IndexedDB unavailable (e.g. private mode): no offline queue.
+    }
+  }, [userId]);
+
+  const sync = useCallback(async () => {
+    let entries: QueueEntry[];
+    try {
+      entries = await idbQueue.list(userId);
+    } catch {
+      return;
+    }
+    const { saved } = await syncQueue(entries, {
+      save: (e) =>
+        saveMealLog({
+          clientId: e.clientId,
+          inputText: e.text,
+          source: e.source,
+          day: e.day,
+          loggedAt: e.queuedAt,
+          items: e.items,
+        }),
+      remove: idbQueue.remove,
+      put: idbQueue.put,
+    });
+    await reloadQueue();
+    if (saved > 0) router.refresh();
+  }, [userId, reloadQueue, router]);
+
+  // Show the queue on load (even offline); sync on load, when the
+  // connection returns, and when the app is reopened.
+  useEffect(() => {
+    idbQueue
+      .list(userId)
+      .then(setQueue)
+      .catch(() => {});
+    const syncIfOnline = () => {
+      if (navigator.onLine && document.visibilityState === "visible") {
+        void sync();
+      }
+    };
+    syncIfOnline();
+    window.addEventListener("online", syncIfOnline);
+    document.addEventListener("visibilitychange", syncIfOnline);
+    return () => {
+      window.removeEventListener("online", syncIfOnline);
+      document.removeEventListener("visibilitychange", syncIfOnline);
+    };
+  }, [sync, userId]);
+
+  async function enqueue(entry: Omit<QueueEntry, "userId">) {
+    await idbQueue.put({ ...entry, userId });
+    await reloadQueue();
+  }
+
+  function openDraft(
+    inputText: string,
+    base: Pick<Draft, "clientId" | "typedAt" | "fromQueue">,
+  ) {
+    const manualDraft = (note: string): Draft => ({
+      ...base,
+      inputText,
+      source: "manual",
+      note,
+      items: [blankItem(inputText)],
+    });
+    if (!navigator.onLine) {
+      setDraft(manualDraft(OFFLINE_NOTE));
+      return;
+    }
+    startTransition(async () => {
+      try {
+        const result = await parseMealText(inputText);
+        setDraft(
+          result.kind === "parsed"
+            ? {
+                ...base,
+                inputText,
+                source: "ai",
+                note: null,
+                items: result.items.map(toDraftItem),
+              }
+            : manualDraft(result.reason),
+        );
+      } catch {
+        // The request failed: treat it as offline.
+        setDraft(manualDraft(OFFLINE_NOTE));
+      }
+    });
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const inputText = text.trim();
-    if (!inputText || pending) return;
-    startTransition(async () => {
-      const result = await parseMealText(inputText);
-      const clientId = crypto.randomUUID();
-      setDraft(
-        result.kind === "parsed"
-          ? {
-              clientId,
-              inputText,
-              source: "ai",
-              note: null,
-              items: result.items.map(toDraftItem),
-            }
-          : {
-              clientId,
-              inputText,
-              source: "manual",
-              note: result.reason,
-              items: [blankItem(inputText)],
-            },
-      );
+    if (!inputText || pending || draft) return;
+    openDraft(inputText, {
+      clientId: crypto.randomUUID(),
+      typedAt: new Date().toISOString(),
+      fromQueue: false,
     });
+  }
+
+  function finishQueued(entry: QueueEntry) {
+    if (draft) return;
+    openDraft(entry.text, {
+      clientId: entry.clientId,
+      typedAt: entry.queuedAt,
+      fromQueue: true,
+    });
+  }
+
+  async function discard(entry: QueueEntry) {
+    await idbQueue.remove(entry.clientId);
+    await reloadQueue();
   }
 
   return (
@@ -117,6 +259,12 @@ export function LogMeal({ timeZone }: { timeZone: string }) {
         </Button>
       </form>
 
+      {!online ? (
+        <p className="-mt-3 text-sm text-muted-foreground">
+          Offline. Meals you save will sync when you&apos;re back online.
+        </p>
+      ) : null}
+
       {draft ? (
         <ConfirmCard
           // Remount per meal so field state starts fresh.
@@ -124,14 +272,95 @@ export function LogMeal({ timeZone }: { timeZone: string }) {
           draft={draft}
           timeZone={timeZone}
           onChange={setDraft}
-          onDone={() => {
+          onQueue={async (entry) => {
+            await enqueue(entry);
+            setDraft(null);
+            setText("");
+          }}
+          onDone={async () => {
+            if (draft.fromQueue) {
+              await idbQueue.remove(draft.clientId).catch(() => {});
+              await reloadQueue();
+            }
             setDraft(null);
             setText("");
           }}
           onCancel={() => setDraft(null)}
         />
       ) : null}
+
+      <QueueList
+        entries={queue}
+        online={online}
+        busy={draft !== null || pending}
+        onFinish={finishQueued}
+        onDiscard={discard}
+      />
     </>
+  );
+}
+
+function QueueList({
+  entries,
+  online,
+  busy,
+  onFinish,
+  onDiscard,
+}: {
+  entries: QueueEntry[];
+  online: boolean;
+  busy: boolean;
+  onFinish: (entry: QueueEntry) => void;
+  onDiscard: (entry: QueueEntry) => void;
+}) {
+  if (entries.length === 0) return null;
+  return (
+    <section aria-label="Not saved yet">
+      <h2 className="mb-2 text-sm font-medium">Not saved yet</h2>
+      <ul className="divide-y rounded-xl border border-dashed">
+        {entries.map((entry) => {
+          const totals = entry.items ? mealTotals(entry.items) : null;
+          return (
+            <li
+              key={entry.clientId}
+              className="flex items-center gap-2 py-3 pr-1 pl-4"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{entry.text}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {entry.error
+                    ? entry.error
+                    : totals
+                      ? `${totals.calories} kcal · ${totals.protein_g}g protein · syncs when online`
+                      : "Not logged yet. Finish it when online."}
+                </p>
+              </div>
+              {!entry.items ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!online || busy}
+                  onClick={() => onFinish(entry)}
+                >
+                  Finish
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Discard ${entry.text}`}
+                className="size-11 text-muted-foreground"
+                onClick={() => onDiscard(entry)}
+              >
+                <X />
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -139,19 +368,23 @@ function ConfirmCard({
   draft,
   timeZone,
   onChange,
+  onQueue,
   onDone,
   onCancel,
 }: {
   draft: Draft;
   timeZone: string;
   onChange: (draft: Draft) => void;
-  onDone: () => void;
+  onQueue: (entry: Omit<QueueEntry, "userId">) => Promise<void>;
+  onDone: () => Promise<void>;
   onCancel: () => void;
 }) {
   const [saving, startSaving] = useTransition();
   const [error, setError] = useState<string | null>(null);
   // Decided once when the card opens, so the question doesn't appear mid-edit.
-  const [askDay] = useState(() => isLateNight(new Date(), timeZone));
+  const [askDay] = useState(() =>
+    isLateNight(new Date(draft.typedAt), timeZone),
+  );
   const [day, setDay] = useState<DayChoice | null>(askDay ? null : "today");
 
   const manual = draft.source === "manual";
@@ -186,28 +419,44 @@ function ConfirmCard({
       })),
     });
 
+  const queueEntry = (
+    items: QueueEntry["items"],
+  ): Omit<QueueEntry, "userId"> => ({
+    clientId: draft.clientId,
+    text: draft.inputText,
+    queuedAt: draft.typedAt,
+    day: day ?? "today",
+    source: draft.source,
+    items,
+  });
+
   function save() {
     if (!canSave || day === null) return;
     setError(null);
+    const items = toQueuedItems(draft.items);
     startSaving(async () => {
-      const result = await saveMealLog({
-        clientId: draft.clientId,
-        inputText: draft.inputText,
-        source: draft.source,
-        day,
-        items: draft.items.map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          calories: i.calories,
-          protein_g: i.protein_g,
-          portion: i.portion,
-          confidence: i.confidence,
-        })),
-      });
+      // No connection: keep it in the queue; it syncs when back online.
+      if (!navigator.onLine) return onQueue(queueEntry(items));
+      let result: { error?: string };
+      try {
+        result = await saveMealLog({
+          clientId: draft.clientId,
+          inputText: draft.inputText,
+          source: draft.source,
+          day,
+          // Queued lines keep the time they were typed.
+          loggedAt: draft.fromQueue ? draft.typedAt : undefined,
+          items,
+        });
+      } catch {
+        return onQueue(queueEntry(items));
+      }
       if (result.error) setError(result.error);
-      else onDone();
+      else await onDone();
     });
   }
+
+  const offline = draft.note === OFFLINE_NOTE;
 
   return (
     <Card>
@@ -308,6 +557,16 @@ function ConfirmCard({
         {!manual ? (
           <Button type="button" variant="ghost" onClick={switchToManual}>
             Enter numbers instead
+          </Button>
+        ) : null}
+        {offline && !draft.fromQueue ? (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={saving}
+            onClick={() => startSaving(() => onQueue(queueEntry(null)))}
+          >
+            Finish later
           </Button>
         ) : null}
       </CardContent>
