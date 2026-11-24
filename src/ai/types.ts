@@ -8,7 +8,11 @@ export type ParsedItem = {
   quantity: string;
   calories: number;
   protein_g: number;
+  /** Low = a typical portion was assumed (e.g. "some", "a bit"). */
+  confidence?: Confidence;
 };
+
+export type Confidence = "high" | "medium" | "low";
 
 /** Usage for one model call; a parse can make several (e.g. a retry). */
 export type CallUsage = {

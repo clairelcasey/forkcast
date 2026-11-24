@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import {
   localDate,
@@ -9,6 +10,7 @@ import {
   restDayTargets,
   sumMacros,
 } from "@/lib/targets/targets";
+import { LogMeal } from "./log/log-meal";
 import { deleteMealLog } from "./meals/actions";
 
 type MealRow = {
@@ -20,7 +22,7 @@ type MealRow = {
   protein_g: number;
 };
 
-// Today's remaining targets and meals. Reads cookies, so render it inside
+// The log box, today's remaining targets and today's meals. Reads cookies, so render it inside
 // <Suspense>.
 export async function Today() {
   const user = await getCurrentUser();
@@ -53,6 +55,8 @@ export async function Today() {
 
   return (
     <>
+      <LogMeal timeZone={profile.timezone} />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Today</CardTitle>
@@ -138,7 +142,10 @@ function MealList({ meals, timeZone }: { meals: MealRow[]; timeZone: string }) {
         {meals.map((meal) => {
           const name = mealName(meal);
           return (
-            <li key={meal.id} className="flex items-center gap-3 py-3 pr-1 pl-4">
+            <li
+              key={meal.id}
+              className="flex items-center gap-3 py-3 pr-1 pl-4"
+            >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{name}</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
@@ -170,7 +177,9 @@ function mealName(meal: MealRow): string {
   if (meal.input_text) return meal.input_text;
   if (Array.isArray(meal.items)) {
     const names = meal.items
-      .map((i) => (i && typeof i === "object" && "name" in i ? String(i.name) : null))
+      .map((i) =>
+        i && typeof i === "object" && "name" in i ? String(i.name) : null,
+      )
       .filter(Boolean);
     if (names.length) return names.join(", ");
   }
@@ -181,18 +190,25 @@ const round1 = (x: number) => Math.round(x * 10) / 10;
 
 export function TodaySkeleton() {
   return (
-    <Card aria-busy="true">
-      <CardHeader>
-        <CardTitle className="text-base">Today</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-4">
-        {["Protein", "Calories"].map((label) => (
-          <div key={label}>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-semibold">—</p>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+    <>
+      <Input
+        aria-label="What did you eat?"
+        placeholder="What did you eat?"
+        disabled
+      />
+      <Card aria-busy="true">
+        <CardHeader>
+          <CardTitle className="text-base">Today</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4">
+          {["Protein", "Calories"].map((label) => (
+            <div key={label}>
+              <p className="text-sm text-muted-foreground">{label}</p>
+              <p className="text-2xl font-semibold">—</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </>
   );
 }

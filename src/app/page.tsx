@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { signOut } from "./login/actions";
 import { Today, TodaySkeleton } from "./today";
 
@@ -16,13 +15,6 @@ export default function HomePage() {
           </Button>
         </form>
       </header>
-
-      <Input
-        aria-label="What did you eat?"
-        placeholder="What did you eat?"
-        disabled
-        title="Meal logging is coming soon"
-      />
 
       <Suspense fallback={<TodaySkeleton />}>
         <Today />

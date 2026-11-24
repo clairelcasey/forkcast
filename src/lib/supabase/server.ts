@@ -1,6 +1,7 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { publicEnv } from "@/lib/env";
 import type { Database } from "./database.types";
 
@@ -8,6 +9,9 @@ import type { Database } from "./database.types";
 // It acts as the signed-in user (never the service role), so RLS applies.
 // Create a new one per request.
 export async function createClient() {
+  // supabase-js reads the clock (session expiry), which partial prerendering
+  // forbids, so render anything that uses this client at request time.
+  await connection();
   const env = publicEnv();
   const cookieStore = await cookies();
 
