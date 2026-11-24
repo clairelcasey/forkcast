@@ -44,7 +44,7 @@ insert into public.allowed_users (email) values ('you@example.com');
 ## Checks
 
 ```bash
-pnpm typecheck && pnpm lint
+pnpm typecheck && pnpm lint && pnpm test
 ```
 
 CI also runs a production build and a gitleaks secret scan on every pull request.
