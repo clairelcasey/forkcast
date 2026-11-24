@@ -1,0 +1,39 @@
+{
+  "id": "home-spaghetti-marinara",
+  "input": "about 2 cups of spaghetti with half a cup of marinara and some parmesan",
+  "tags": [
+    "home",
+    "vague_amount",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Spaghetti, cooked",
+        "quantity": "2 cups (280 g)",
+        "calories": 442,
+        "protein_g": 16.2
+      },
+      {
+        "name": "Marinara sauce",
+        "quantity": "1/2 cup (132 g)",
+        "calories": 66,
+        "protein_g": 1.8
+      },
+      {
+        "name": "Parmesan, grated",
+        "quantity": "2 tbsp (10 g)",
+        "calories": 42,
+        "protein_g": 2.9
+      }
+    ],
+    "calories": 550,
+    "protein_g": 20.9
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA SR Legacy per 100 g: spaghetti cooked 158/5.8, marinara ~50/1.4, parmesan grated ~420/29",
+    "checked_on": null
+  },
+  "notes": "'Some parmesan' taken as 2 tbsp."
+}

@@ -36,7 +36,7 @@ Personal AI nutrition tracker: a Next.js PWA installed on an iPhone home screen.
 - `pnpm typecheck`, `pnpm lint`
 - `pnpm test` — unit tests (Vitest; files named `*.test.ts` next to the code)
 - `pnpm build` — production build (CI runs it with placeholder Supabase env)
-- `pnpm eval` — run the eval set in `evals/` against the current prompt (placeholder until Milestone 2)
+- `pnpm eval [--parser stub] [--only id,id]` — run every case in `evals/cases/` through a meal parser; prints metrics and writes `evals/results/latest.md` for the PR
 - `pnpm exec supabase start` / `pnpm exec supabase db reset` — local Supabase stack (needs Docker); applies `supabase/migrations/`
 - `pnpm db:types` — regenerate `src/lib/supabase/database.types.ts` from the local database
 
@@ -48,4 +48,5 @@ Personal AI nutrition tracker: a Next.js PWA installed on an iPhone home screen.
 - Sentry options are shared in `sentry.shared.ts` and keep personal data (bodies, cookies, AI inputs) out of reports. Keep it that way.
 - **After every migration**, run `pnpm exec supabase db reset` then `pnpm db:types`, and commit the regenerated `database.types.ts` with the migration. Both Supabase clients are typed with it, so a stale file hides schema mistakes.
 - Plain-code logic (day types, targets, guardrails) gets unit tests.
+- Eval cases (`evals/cases/<id>.json`, schema in `evals/schema.ts`) use only public chain/packaged nutrition or made-up home meals. Totals must equal the sum of items. Set `checked_on` only after checking the numbers against the source.
 - The allowlist is `public.allowed_users`, enforced by the `hook_before_user_created` auth hook.

@@ -1,0 +1,57 @@
+{
+  "id": "chipotle-chicken-bowl",
+  "input": "chipotle chicken bowl with white rice, black beans, fajita veggies, mild salsa and cheese",
+  "tags": [
+    "chain",
+    "mixed_bowl"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chicken",
+        "quantity": "1 serving (4 oz)",
+        "calories": 180,
+        "protein_g": 32
+      },
+      {
+        "name": "White rice",
+        "quantity": "1 serving",
+        "calories": 210,
+        "protein_g": 4
+      },
+      {
+        "name": "Black beans",
+        "quantity": "1 serving",
+        "calories": 130,
+        "protein_g": 8
+      },
+      {
+        "name": "Fajita veggies",
+        "quantity": "1 serving",
+        "calories": 20,
+        "protein_g": 1
+      },
+      {
+        "name": "Fresh tomato salsa",
+        "quantity": "1 serving",
+        "calories": 25,
+        "protein_g": 0
+      },
+      {
+        "name": "Cheese",
+        "quantity": "1 serving",
+        "calories": 110,
+        "protein_g": 6
+      }
+    ],
+    "calories": 675,
+    "protein_g": 51
+  },
+  "source": {
+    "kind": "published",
+    "name": "Chipotle US nutrition calculator",
+    "url": "https://www.chipotle.com/nutrition-calculator",
+    "checked_on": null
+  },
+  "notes": "Standard entree portions. 'Mild salsa' is the fresh tomato salsa."
+}

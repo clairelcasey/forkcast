@@ -1,0 +1,33 @@
+{
+  "id": "home-strawberries-milk",
+  "input": "some strawberries and a glass of 2% milk",
+  "tags": [
+    "home",
+    "drink",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Strawberries",
+        "quantity": "1 cup (152 g)",
+        "calories": 49,
+        "protein_g": 1
+      },
+      {
+        "name": "2% milk",
+        "quantity": "1 cup (244 g)",
+        "calories": 122,
+        "protein_g": 8.1
+      }
+    ],
+    "calories": 171,
+    "protein_g": 9.1
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA SR Legacy: strawberries 32/0.67 per 100 g, 2% milk 122 kcal/8.1 g per cup",
+    "checked_on": null
+  },
+  "notes": "'Some' taken as 1 cup; 'a glass' as 1 cup."
+}

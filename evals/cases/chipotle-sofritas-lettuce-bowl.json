@@ -1,0 +1,57 @@
+{
+  "id": "chipotle-sofritas-lettuce-bowl",
+  "input": "sofritas lettuce bowl, no rice, black beans, fajitas, green salsa, guac",
+  "tags": [
+    "chain",
+    "mixed_bowl"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Romaine lettuce",
+        "quantity": "1 serving",
+        "calories": 5,
+        "protein_g": 0
+      },
+      {
+        "name": "Sofritas",
+        "quantity": "1 serving",
+        "calories": 150,
+        "protein_g": 8
+      },
+      {
+        "name": "Black beans",
+        "quantity": "1 serving",
+        "calories": 130,
+        "protein_g": 8
+      },
+      {
+        "name": "Fajita veggies",
+        "quantity": "1 serving",
+        "calories": 20,
+        "protein_g": 1
+      },
+      {
+        "name": "Tomatillo-green chili salsa",
+        "quantity": "1 serving",
+        "calories": 15,
+        "protein_g": 0
+      },
+      {
+        "name": "Guacamole",
+        "quantity": "1 serving",
+        "calories": 230,
+        "protein_g": 2
+      }
+    ],
+    "calories": 550,
+    "protein_g": 19
+  },
+  "source": {
+    "kind": "published",
+    "name": "Chipotle US nutrition calculator",
+    "url": "https://www.chipotle.com/nutrition-calculator",
+    "checked_on": null
+  },
+  "notes": "'No rice' must not add rice."
+}

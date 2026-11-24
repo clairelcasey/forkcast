@@ -1,0 +1,33 @@
+{
+  "id": "mcdonalds-big-mac-fries",
+  "input": "big mac and medium fries",
+  "tags": [
+    "chain",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Big Mac",
+        "quantity": "1",
+        "calories": 590,
+        "protein_g": 25
+      },
+      {
+        "name": "French fries",
+        "quantity": "medium",
+        "calories": 320,
+        "protein_g": 5
+      }
+    ],
+    "calories": 910,
+    "protein_g": 30
+  },
+  "source": {
+    "kind": "published",
+    "name": "McDonald's US nutrition",
+    "url": "https://www.mcdonalds.com/us/en-us/about-our-food/nutrition-calculator.html",
+    "checked_on": null
+  },
+  "notes": "Fries protein is listed as 4–5 g depending on the year; check it."
+}

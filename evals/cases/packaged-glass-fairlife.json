@@ -1,0 +1,27 @@
+{
+  "id": "packaged-glass-fairlife",
+  "input": "glass of fairlife 2% milk",
+  "tags": [
+    "packaged",
+    "drink",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Fairlife 2% ultra-filtered milk",
+        "quantity": "1 cup (240 mL)",
+        "calories": 120,
+        "protein_g": 13
+      }
+    ],
+    "calories": 120,
+    "protein_g": 13
+  },
+  "source": {
+    "kind": "published",
+    "name": "Fairlife label",
+    "checked_on": null
+  },
+  "notes": "'A glass' is taken as 1 cup."
+}

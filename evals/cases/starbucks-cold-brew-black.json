@@ -1,0 +1,27 @@
+{
+  "id": "starbucks-cold-brew-black",
+  "input": "grande cold brew, black",
+  "tags": [
+    "chain",
+    "drink"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Cold Brew, black",
+        "quantity": "grande (16 fl oz)",
+        "calories": 5,
+        "protein_g": 0
+      }
+    ],
+    "calories": 5,
+    "protein_g": 0
+  },
+  "source": {
+    "kind": "published",
+    "name": "Starbucks US menu nutrition (grande, 2% milk)",
+    "url": "https://www.starbucks.com/menu",
+    "checked_on": null
+  },
+  "notes": "Zero protein: excluded from protein MAPE, still counts for calories and parse success."
+}

@@ -1,0 +1,27 @@
+{
+  "id": "starbucks-grande-latte",
+  "input": "grande latte",
+  "tags": [
+    "chain",
+    "drink"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Caffè Latte, 2% milk",
+        "quantity": "grande (16 fl oz)",
+        "calories": 190,
+        "protein_g": 13
+      }
+    ],
+    "calories": 190,
+    "protein_g": 13
+  },
+  "source": {
+    "kind": "published",
+    "name": "Starbucks US menu nutrition (grande, 2% milk)",
+    "url": "https://www.starbucks.com/menu",
+    "checked_on": null
+  },
+  "notes": "Default milk is 2%."
+}

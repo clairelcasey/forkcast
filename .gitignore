@@ -46,3 +46,6 @@ supabase/.temp
 
 # allow the example env file
 !.env.example
+
+# eval output
+/evals/results/
