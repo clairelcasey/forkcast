@@ -32,8 +32,17 @@ Personal AI nutrition tracker: a Next.js PWA installed on an iPhone home screen.
 
 ## Commands
 
-(Fill these in once the project is scaffolded.)
-
-- `pnpm dev` — run locally
+- `pnpm dev` — run locally (needs `.env.local`; copy `.env.example`)
 - `pnpm typecheck`, `pnpm lint`
-- `pnpm eval` — run the eval set in `evals/` against the current prompt
+- `pnpm build` — production build (CI runs it with placeholder Supabase env)
+- `pnpm eval` — run the eval set in `evals/` against the current prompt (placeholder until Milestone 2)
+- `pnpm exec supabase start` / `pnpm exec supabase db reset` — local Supabase stack (needs Docker); applies `supabase/migrations/`
+- `pnpm db:types` — regenerate `src/lib/supabase/database.types.ts` from the local database
+
+## Project notes
+
+- Next.js 16: `middleware` is now `src/proxy.ts`, and `cacheComponents` is on, so anything that reads cookies/session must render inside `<Suspense>`. APIs differ from older training data: check `node_modules/next/dist/docs/` (see `AGENTS.md`).
+- Supabase clients: `src/lib/supabase/server.ts` (server, acts as the user) and `client.ts` (browser). Use `getCurrentUser()` (verified claims) for auth checks, never the unverified session.
+- shadcn/ui components live in `src/components/ui/`. Add more with `pnpm dlx shadcn@latest add <name>` (style `new-york`, see `components.json`).
+- Sentry options are shared in `sentry.shared.ts` and keep personal data (bodies, cookies, AI inputs) out of reports. Keep it that way.
+- The allowlist is `public.allowed_users`, enforced by the `hook_before_user_created` auth hook.
