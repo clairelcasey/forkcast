@@ -46,6 +46,8 @@ const saveSchema = z.object({
   inputText: z.string().trim().max(500),
   source: z.enum(["ai", "manual"]),
   day: z.enum(["today", "yesterday"]),
+  /** When the meal was typed, for logs queued offline. Defaults to now. */
+  loggedAt: z.iso.datetime({ offset: true }).optional(),
   items: z
     .array(
       z.object({
@@ -60,6 +62,9 @@ const saveSchema = z.object({
     .min(1)
     .max(20),
 });
+
+const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+const MAX_QUEUE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type SaveMealInput = z.input<typeof saveSchema>;
 
@@ -83,13 +88,21 @@ export async function saveMealLog(
   if (!profile) return { error: "Couldn't load your settings. Try again." };
 
   const now = new Date();
+  const loggedAt = meal.loggedAt ? new Date(meal.loggedAt) : now;
+  if (
+    loggedAt.getTime() > now.getTime() + MAX_CLOCK_SKEW_MS ||
+    loggedAt.getTime() < now.getTime() - MAX_QUEUE_AGE_MS
+  ) {
+    return { error: "This one is too old to save. Log it again." };
+  }
+
   const totals = mealTotals(meal.items);
   const { error } = await supabase.from("meal_logs").insert({
     user_id: user.id,
     client_id: meal.clientId,
-    logged_at: now.toISOString(),
+    logged_at: loggedAt.toISOString(),
     timezone: profile.timezone,
-    local_date: mealLocalDate(now, profile.timezone, meal.day),
+    local_date: mealLocalDate(loggedAt, profile.timezone, meal.day),
     input_text: meal.inputText || null,
     items: meal.items,
     calories: totals.calories,

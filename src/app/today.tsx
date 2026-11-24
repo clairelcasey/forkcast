@@ -55,7 +55,7 @@ export async function Today() {
 
   return (
     <>
-      <LogMeal timeZone={profile.timezone} />
+      <LogMeal timeZone={profile.timezone} userId={user.id} />
 
       <Card>
         <CardHeader>
