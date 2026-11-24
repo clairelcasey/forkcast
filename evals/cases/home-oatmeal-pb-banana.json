@@ -1,0 +1,39 @@
+{
+  "id": "home-oatmeal-pb-banana",
+  "input": "oatmeal with peanut butter and a banana",
+  "tags": [
+    "home",
+    "vague_amount",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Rolled oats (dry)",
+        "quantity": "1/2 cup (40 g)",
+        "calories": 150,
+        "protein_g": 5
+      },
+      {
+        "name": "Peanut butter",
+        "quantity": "2 tbsp (32 g)",
+        "calories": 190,
+        "protein_g": 7
+      },
+      {
+        "name": "Banana",
+        "quantity": "1 medium (118 g)",
+        "calories": 105,
+        "protein_g": 1.3
+      }
+    ],
+    "calories": 445,
+    "protein_g": 13.3
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "Quaker Old Fashioned and Jif labels; USDA banana 89 kcal, 1.09 g per 100 g",
+    "checked_on": null
+  },
+  "notes": "Peanut butter amount unstated; 2 tbsp is the label serving."
+}

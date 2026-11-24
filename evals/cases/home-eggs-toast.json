@@ -1,0 +1,38 @@
+{
+  "id": "home-eggs-toast",
+  "input": "2 scrambled eggs with butter and a slice of whole wheat toast",
+  "tags": [
+    "home",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Eggs",
+        "quantity": "2 large (100 g)",
+        "calories": 143,
+        "protein_g": 12.6
+      },
+      {
+        "name": "Butter",
+        "quantity": "1 tsp (5 g)",
+        "calories": 36,
+        "protein_g": 0
+      },
+      {
+        "name": "Whole wheat bread",
+        "quantity": "1 slice (32 g)",
+        "calories": 81,
+        "protein_g": 4
+      }
+    ],
+    "calories": 260,
+    "protein_g": 16.6
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA SR Legacy per 100 g: whole egg 143/12.6, butter 717/0.85, whole-wheat bread 252/12.4",
+    "checked_on": null
+  },
+  "notes": "Butter amount unstated; 1 tsp assumed."
+}

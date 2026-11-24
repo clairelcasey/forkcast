@@ -1,0 +1,25 @@
+{
+  "id": "mcdonalds-egg-mcmuffin",
+  "input": "egg mcmuffin",
+  "tags": [
+    "chain"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Egg McMuffin",
+        "quantity": "1",
+        "calories": 310,
+        "protein_g": 17
+      }
+    ],
+    "calories": 310,
+    "protein_g": 17
+  },
+  "source": {
+    "kind": "published",
+    "name": "McDonald's US nutrition",
+    "url": "https://www.mcdonalds.com/us/en-us/about-our-food/nutrition-calculator.html",
+    "checked_on": null
+  }
+}

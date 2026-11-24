@@ -1,0 +1,33 @@
+{
+  "id": "starbucks-vanilla-latte-egg-bites",
+  "input": "grande vanilla latte and bacon gruyere egg bites",
+  "tags": [
+    "chain",
+    "drink",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Vanilla Latte, 2% milk",
+        "quantity": "grande (16 fl oz)",
+        "calories": 250,
+        "protein_g": 12
+      },
+      {
+        "name": "Bacon & Gruyère Egg Bites",
+        "quantity": "2 pieces",
+        "calories": 300,
+        "protein_g": 19
+      }
+    ],
+    "calories": 550,
+    "protein_g": 31
+  },
+  "source": {
+    "kind": "published",
+    "name": "Starbucks US menu nutrition (grande, 2% milk)",
+    "url": "https://www.starbucks.com/menu",
+    "checked_on": null
+  }
+}

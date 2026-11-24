@@ -1,0 +1,33 @@
+{
+  "id": "packaged-chobani-strawberries",
+  "input": "chobani plain nonfat greek yogurt with a handful of strawberries",
+  "tags": [
+    "packaged",
+    "vague_amount",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chobani Plain Non-Fat Greek Yogurt",
+        "quantity": "1 cup (5.3 oz)",
+        "calories": 80,
+        "protein_g": 14
+      },
+      {
+        "name": "Strawberries",
+        "quantity": "a handful (80 g)",
+        "calories": 26,
+        "protein_g": 0.5
+      }
+    ],
+    "calories": 106,
+    "protein_g": 14.5
+  },
+  "source": {
+    "kind": "published",
+    "name": "Chobani label; USDA strawberries 32 kcal, 0.67 g per 100 g",
+    "checked_on": null
+  },
+  "notes": "Chobani protein is 14 or 15 g depending on the label version; check it."
+}

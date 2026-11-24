@@ -1,0 +1,62 @@
+{
+  "id": "chipotle-steak-burrito",
+  "input": "steak burrito from chipotle, brown rice, pinto beans, corn salsa, sour cream, lettuce",
+  "tags": [
+    "chain",
+    "mixed_bowl"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Flour tortilla (burrito)",
+        "quantity": "1",
+        "calories": 320,
+        "protein_g": 8
+      },
+      {
+        "name": "Steak",
+        "quantity": "1 serving",
+        "calories": 150,
+        "protein_g": 21
+      },
+      {
+        "name": "Brown rice",
+        "quantity": "1 serving",
+        "calories": 210,
+        "protein_g": 4
+      },
+      {
+        "name": "Pinto beans",
+        "quantity": "1 serving",
+        "calories": 130,
+        "protein_g": 8
+      },
+      {
+        "name": "Roasted chili-corn salsa",
+        "quantity": "1 serving",
+        "calories": 80,
+        "protein_g": 3
+      },
+      {
+        "name": "Sour cream",
+        "quantity": "1 serving",
+        "calories": 110,
+        "protein_g": 2
+      },
+      {
+        "name": "Romaine lettuce",
+        "quantity": "1 serving",
+        "calories": 5,
+        "protein_g": 0
+      }
+    ],
+    "calories": 1005,
+    "protein_g": 46
+  },
+  "source": {
+    "kind": "published",
+    "name": "Chipotle US nutrition calculator",
+    "url": "https://www.chipotle.com/nutrition-calculator",
+    "checked_on": null
+  }
+}

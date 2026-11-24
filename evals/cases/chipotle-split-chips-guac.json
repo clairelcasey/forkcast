@@ -1,0 +1,33 @@
+{
+  "id": "chipotle-split-chips-guac",
+  "input": "split chips and guac with a friend at chipotle",
+  "tags": [
+    "chain",
+    "shared_plate"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chips",
+        "quantity": "half a regular bag",
+        "calories": 270,
+        "protein_g": 3.5
+      },
+      {
+        "name": "Guacamole",
+        "quantity": "half a side",
+        "calories": 115,
+        "protein_g": 1
+      }
+    ],
+    "calories": 385,
+    "protein_g": 4.5
+  },
+  "source": {
+    "kind": "published",
+    "name": "Chipotle US nutrition calculator",
+    "url": "https://www.chipotle.com/nutrition-calculator",
+    "checked_on": null
+  },
+  "notes": "Half of chips (540 kcal, 7 g) and half of a side of guac (230 kcal, 2 g)."
+}

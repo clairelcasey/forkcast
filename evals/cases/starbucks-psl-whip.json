@@ -1,0 +1,26 @@
+{
+  "id": "starbucks-psl-whip",
+  "input": "grande pumpkin spice latte with whip",
+  "tags": [
+    "chain",
+    "drink"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Pumpkin Spice Latte, 2% milk, whipped cream",
+        "quantity": "grande (16 fl oz)",
+        "calories": 390,
+        "protein_g": 14
+      }
+    ],
+    "calories": 390,
+    "protein_g": 14
+  },
+  "source": {
+    "kind": "published",
+    "name": "Starbucks US menu nutrition (grande, 2% milk)",
+    "url": "https://www.starbucks.com/menu",
+    "checked_on": null
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "mcdonalds-half-nuggets",
+  "input": "10 piece mcnuggets, ate about half",
+  "tags": [
+    "chain",
+    "shared_plate",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chicken McNuggets",
+        "quantity": "5 of a 10-piece",
+        "calories": 205,
+        "protein_g": 11.5
+      }
+    ],
+    "calories": 205,
+    "protein_g": 11.5
+  },
+  "source": {
+    "kind": "published",
+    "name": "McDonald's US nutrition",
+    "url": "https://www.mcdonalds.com/us/en-us/about-our-food/nutrition-calculator.html",
+    "checked_on": null
+  },
+  "notes": "Half of a 10-piece (410 kcal, 23 g). No sauce."
+}

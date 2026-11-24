@@ -1,0 +1,39 @@
+{
+  "id": "home-chicken-rice-broccoli",
+  "input": "6 oz grilled chicken breast, a cup of white rice, and broccoli",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chicken breast, cooked",
+        "quantity": "6 oz (170 g)",
+        "calories": 281,
+        "protein_g": 52.7
+      },
+      {
+        "name": "White rice, cooked",
+        "quantity": "1 cup (158 g)",
+        "calories": 205,
+        "protein_g": 4.3
+      },
+      {
+        "name": "Broccoli, cooked",
+        "quantity": "1 cup (156 g)",
+        "calories": 55,
+        "protein_g": 3.7
+      }
+    ],
+    "calories": 541,
+    "protein_g": 60.7
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA SR Legacy per 100 g: chicken breast roasted 165 kcal/31 g, white rice cooked 130/2.69, broccoli boiled 35/2.38",
+    "checked_on": null
+  },
+  "notes": "Broccoli amount unstated; 1 cup assumed."
+}

@@ -1,0 +1,31 @@
+{
+  "id": "home-apple-pb",
+  "input": "an apple with 2 tbsp of jif",
+  "tags": [
+    "home",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Apple",
+        "quantity": "1 medium (182 g)",
+        "calories": 95,
+        "protein_g": 0.5
+      },
+      {
+        "name": "Jif Creamy Peanut Butter",
+        "quantity": "2 tbsp (32 g)",
+        "calories": 190,
+        "protein_g": 7
+      }
+    ],
+    "calories": 285,
+    "protein_g": 7.5
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA apple raw 52 kcal, 0.26 g per 100 g; Jif label",
+    "checked_on": null
+  }
+}

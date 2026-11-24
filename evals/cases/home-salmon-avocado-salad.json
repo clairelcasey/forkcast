@@ -1,0 +1,43 @@
+{
+  "id": "home-salmon-avocado-salad",
+  "input": "5 oz salmon, half an avocado, side salad with a tbsp of olive oil",
+  "tags": [
+    "home",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Salmon, cooked",
+        "quantity": "5 oz (142 g)",
+        "calories": 293,
+        "protein_g": 31.4
+      },
+      {
+        "name": "Avocado",
+        "quantity": "half (68 g)",
+        "calories": 109,
+        "protein_g": 1.4
+      },
+      {
+        "name": "Romaine",
+        "quantity": "1.5 cups (47 g)",
+        "calories": 8,
+        "protein_g": 0.6
+      },
+      {
+        "name": "Olive oil",
+        "quantity": "1 tbsp (13.5 g)",
+        "calories": 119,
+        "protein_g": 0
+      }
+    ],
+    "calories": 529,
+    "protein_g": 33.4
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA SR Legacy per 100 g: farmed Atlantic salmon cooked 206/22.1, avocado 160/2.0, romaine 17/1.23, olive oil 884/0",
+    "checked_on": null
+  }
+}
