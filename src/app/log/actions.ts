@@ -10,13 +10,19 @@ import {
   mealTotals,
 } from "@/lib/meals/meal-math";
 import { mealItemsSchema, type MealItem } from "@/lib/meals/item-schema";
+import { applyModifiers } from "@/lib/meals/modifiers";
+import { mealMatchKey } from "@/lib/meals/normalize";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import { countParsesSince, logAiCalls } from "@/server/ai-calls";
 import { rememberFoods, type FoodEntry } from "@/server/nutrition";
 import {
+  findByNickname,
   findSavedMeal,
-  recordSavedMeal,
   markSavedMealUsed,
+  nicknameTaken,
+  recordSavedMeal,
+  setNickname,
+  versionSavedMeal,
 } from "@/server/saved-meals";
 
 export type ParseResponse =
@@ -24,16 +30,29 @@ export type ParseResponse =
   | {
       kind: "cache";
       savedMealId: string;
+      name: string;
+      nickname: string | null;
       useCount: number;
       items: MealItem[];
+      /** Modifiers applied to the saved meal ("no rice"). */
+      modifiers: string[];
+      /** Modifiers that couldn't be applied; shown on the card. */
+      unknownModifiers: string[];
     }
   | { kind: "manual"; reason: string };
 
 const textSchema = z.string().trim().min(1).max(500);
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Turns one typed line into draft items, or asks for manual entry. */
-export async function parseMealText(text: string): Promise<ParseResponse> {
+/**
+ * Turns one typed line into draft items, or asks for manual entry. Saved
+ * meals come first (nickname, then exact text), with no AI call;
+ * `reestimate` skips them to estimate a saved meal again.
+ */
+export async function parseMealText(
+  text: string,
+  options: { reestimate?: boolean } = {},
+): Promise<ParseResponse> {
   const parsed = textSchema.safeParse(text);
   if (!parsed.success) return { kind: "manual", reason: "Type what you ate." };
 
@@ -41,14 +60,39 @@ export async function parseMealText(text: string): Promise<ParseResponse> {
   if (!user) return { kind: "manual", reason: "Sign in again to log meals." };
 
   // A meal confirmed before needs no AI call.
-  const saved = await findSavedMeal(user.id, parsed.data);
-  if (saved) {
-    return {
-      kind: "cache",
-      savedMealId: saved.id,
-      useCount: saved.useCount,
-      items: saved.items,
-    };
+  if (!options.reestimate) {
+    const byNickname = await findByNickname(user.id, parsed.data);
+    if (byNickname) {
+      const { meal, rest } = byNickname;
+      const modified = rest
+        ? applyModifiers(meal.items, rest)
+        : { items: meal.items, applied: [], unknown: [] };
+      if (modified.items.length > 0) {
+        return {
+          kind: "cache",
+          savedMealId: meal.id,
+          name: meal.name,
+          nickname: meal.nickname,
+          useCount: meal.useCount,
+          items: modified.items,
+          modifiers: modified.applied,
+          unknownModifiers: modified.unknown,
+        };
+      }
+    }
+    const saved = await findSavedMeal(user.id, parsed.data);
+    if (saved) {
+      return {
+        kind: "cache",
+        savedMealId: saved.id,
+        name: saved.name,
+        nickname: saved.nickname,
+        useCount: saved.useCount,
+        items: saved.items,
+        modifiers: [],
+        unknownModifiers: [],
+      };
+    }
   }
 
   const parser = getMealParser();
@@ -92,8 +136,14 @@ const saveSchema = z.object({
   clientId: z.uuid(),
   inputText: z.string().trim().max(500),
   source: z.enum(["ai", "manual", "cache"]),
-  /** The saved meal a cache log re-uses. */
+  /** The saved meal this log came from (cache, or re-estimating one). */
   savedMealId: z.uuid().optional(),
+  /** "version": save these items to the saved meal going forward. */
+  savedMealChange: z.enum(["none", "version"]).default("none"),
+  /** Set (or with "" clear) the saved meal's nickname; omit to leave it. */
+  nickname: z.string().trim().max(40).optional(),
+  /** Modifiers applied to a saved meal for this log ("no rice"). */
+  modifiers: z.array(z.string().max(80)).max(10).optional(),
   day: z.enum(["today", "yesterday"]),
   /** When the meal was typed, for logs queued offline. Defaults to now. */
   loggedAt: z.iso.datetime({ offset: true }).optional(),
@@ -133,6 +183,21 @@ export async function saveMealLog(
     return { error: "This one is too old to save. Log it again." };
   }
 
+  // Nicknames are unique among active saved meals; check before saving.
+  const nickname =
+    meal.nickname === undefined ? undefined : meal.nickname || null;
+  if (
+    nickname &&
+    (await nicknameTaken(
+      user.id,
+      nickname,
+      mealMatchKey(meal.inputText),
+      meal.savedMealId,
+    ))
+  ) {
+    return { error: `"${nickname}" is already a nickname for another meal.` };
+  }
+
   const totals = mealTotals(meal.items);
   const { data: inserted, error } = await supabase
     .from("meal_logs")
@@ -148,6 +213,7 @@ export async function saveMealLog(
       protein_g: totals.protein_g,
       source: meal.source,
       confidence: meal.source === "manual" ? null : mealConfidence(meal.items),
+      modifiers: meal.modifiers?.length ? meal.modifiers : null,
     })
     .select("id")
     .single();
@@ -157,11 +223,17 @@ export async function saveMealLog(
   if (error?.code === "23505") return {};
   if (error || !inserted) return { error: "Couldn't save. Try again." };
 
-  // Every confirmed meal becomes (or re-uses) a saved meal.
-  let savedMealId =
-    meal.source === "cache" && meal.savedMealId
-      ? await markSavedMealUsed(meal.savedMealId)
-      : null;
+  // Every confirmed meal becomes (or re-uses) a saved meal. A change to a
+  // saved meal makes a new version; "just this time" leaves it as it was.
+  let savedMealId: string | null = null;
+  if (meal.savedMealId && meal.savedMealChange === "version") {
+    savedMealId = await versionSavedMeal(meal.savedMealId, {
+      items: meal.items,
+      ...totals,
+    });
+  } else if (meal.savedMealId) {
+    savedMealId = await markSavedMealUsed(meal.savedMealId);
+  }
   if (!savedMealId && meal.inputText) {
     savedMealId = await recordSavedMeal({
       text: meal.inputText,
@@ -174,6 +246,10 @@ export async function saveMealLog(
       .from("meal_logs")
       .update({ saved_meal_id: savedMealId })
       .eq("id", inserted.id);
+    if (nickname !== undefined) {
+      const { error: nicknameError } = await setNickname(savedMealId, nickname);
+      if (nicknameError) console.error("nickname failed", nicknameError.code);
+    }
   }
 
   // Remember the database entries behind a confirmed meal (foods cache).

@@ -65,6 +65,7 @@ export async function Today() {
         recent={recent.map((m) => ({
           id: m.id,
           name: m.name,
+          nickname: m.nickname,
           calories: m.calories,
           protein_g: m.protein_g,
           items: m.items,
