@@ -21,6 +21,7 @@ import {
   markSavedMealUsed,
   nicknameTaken,
   recordSavedMeal,
+  searchSavedMeals,
   setNickname,
   versionSavedMeal,
 } from "@/server/saved-meals";
@@ -39,7 +40,54 @@ export type ParseResponse =
       /** Modifiers that couldn't be applied; shown on the card. */
       unknownModifiers: string[];
     }
+  | {
+      /** Close to a saved meal: ask before spending an AI call. */
+      kind: "similar";
+      meal: SuggestedMeal;
+    }
   | { kind: "manual"; reason: string };
+
+/** A saved meal offered in suggestions (type-ahead, "same as?"). */
+export type SuggestedMeal = {
+  id: string;
+  name: string;
+  nickname: string | null;
+  calories: number;
+  protein_g: number;
+  useCount: number;
+  lastUsedAt: string | null;
+  items: MealItem[];
+};
+
+/** Fuzzy matches shown while typing, and the bar for "Same as …?". */
+const TYPEAHEAD_MIN_SCORE = 0.4;
+const SIMILAR_MIN_SCORE = 0.6;
+
+const toSuggested = (m: SuggestedMeal): SuggestedMeal => ({
+  id: m.id,
+  name: m.name,
+  nickname: m.nickname,
+  calories: m.calories,
+  protein_g: m.protein_g,
+  useCount: m.useCount,
+  lastUsedAt: m.lastUsedAt,
+  items: m.items,
+});
+
+/** Saved meals matching what's typed so far (no AI). */
+export async function suggestSavedMeals(
+  text: string,
+): Promise<SuggestedMeal[]> {
+  const parsed = z.string().max(500).safeParse(text);
+  if (!parsed.success) return [];
+  const user = await getCurrentUser();
+  if (!user) return [];
+  const matches = await searchSavedMeals(parsed.data, {
+    limit: 5,
+    minScore: TYPEAHEAD_MIN_SCORE,
+  });
+  return matches.map(toSuggested);
+}
 
 const textSchema = z.string().trim().min(1).max(500);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -51,7 +99,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export async function parseMealText(
   text: string,
-  options: { reestimate?: boolean } = {},
+  options: { reestimate?: boolean; skipSimilar?: boolean } = {},
 ): Promise<ParseResponse> {
   const parsed = textSchema.safeParse(text);
   if (!parsed.success) return { kind: "manual", reason: "Type what you ate." };
@@ -92,6 +140,14 @@ export async function parseMealText(
         modifiers: [],
         unknownModifiers: [],
       };
+    }
+    // Close but not the same text: ask before estimating it again.
+    if (!options.skipSimilar) {
+      const [best] = await searchSavedMeals(parsed.data, {
+        limit: 1,
+        minScore: SIMILAR_MIN_SCORE,
+      });
+      if (best) return { kind: "similar", meal: toSuggested(best) };
     }
   }
 
