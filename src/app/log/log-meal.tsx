@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, Plus, X } from "lucide-react";
+import { ArrowUp, Loader2, Plus, X } from "lucide-react";
 import type { Confidence, ParsedItem } from "@/ai/types";
 import type { FoodEntry } from "@/server/nutrition/types";
 import type { MealItem } from "@/lib/meals/item-schema";
@@ -134,6 +134,24 @@ const toQueuedItems = (items: DraftItem[]): QueuedItem[] =>
 const REESTIMATE_NOTE =
   "Re-estimated. Saving updates the saved meal; past logs keep their numbers.";
 
+const TIMEOUT_NOTE = "That took too long. Enter the numbers.";
+/** Show "Still working…" after this long. */
+const SLOW_AFTER_MS = 8_000;
+/** Give up on the parse and open manual entry after this long. */
+const PARSE_TIMEOUT_MS = 25_000;
+
+class ParseTimeout extends Error {}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new ParseTimeout()), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 const OFFLINE_NOTE = "You're offline. Enter the numbers, or finish it later.";
 
 function useOnline() {
@@ -170,6 +188,21 @@ export function LogMeal({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [pending, startTransition] = useTransition();
+  /** A line being read (parse in flight), for the loading card. */
+  const [reading, setReading] = useState<Reading | null>(null);
+  const [slow, setSlow] = useState(false);
+  /** The "Log again" chip being saved. */
+  const [relogging, setRelogging] = useState<string | null>(null);
+
+  // "Still working…" once a parse takes longer than usual.
+  useEffect(() => {
+    if (!reading) return;
+    const timer = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+    return () => {
+      clearTimeout(timer);
+      setSlow(false);
+    };
+  }, [reading]);
   const [flash, setFlash] = useState<Flash | null>(null);
   const [matches, setMatches] = useState<SuggestedMeal[]>([]);
   const [similar, setSimilar] = useState<Similar | null>(null);
@@ -279,12 +312,16 @@ export function LogMeal({
       setDraft(manualDraft(OFFLINE_NOTE));
       return;
     }
+    setReading({ text: inputText, reestimate: Boolean(reestimate) });
     startTransition(async () => {
       try {
-        const result = await parseMealText(inputText, {
-          reestimate: Boolean(reestimate),
-          skipSimilar,
-        });
+        const result = await withTimeout(
+          parseMealText(inputText, {
+            reestimate: Boolean(reestimate),
+            skipSimilar,
+          }),
+          PARSE_TIMEOUT_MS,
+        );
         if (result.kind === "parsed") {
           setDraft({
             ...base,
@@ -327,9 +364,15 @@ export function LogMeal({
           }
           setDraft(manualDraft(result.reason));
         }
-      } catch {
-        // The request failed: treat it as offline.
-        setDraft(manualDraft(OFFLINE_NOTE));
+      } catch (err) {
+        // Too slow, or the request failed (treated as offline).
+        setDraft(
+          manualDraft(
+            err instanceof ParseTimeout ? TIMEOUT_NOTE : OFFLINE_NOTE,
+          ),
+        );
+      } finally {
+        setReading(null);
       }
     });
   }
@@ -421,7 +464,15 @@ export function LogMeal({
       savedMealId: meal.id,
       items: meal.items,
     };
+    setRelogging(meal.id);
     startTransition(async () => {
+      try {
+        await saveRelog();
+      } finally {
+        setRelogging(null);
+      }
+    });
+    async function saveRelog() {
       if (!navigator.onLine) {
         await enqueue(entry);
         setFlash({ name: meal.name, logId: null });
@@ -445,7 +496,7 @@ export function LogMeal({
         await enqueue(entry);
         setFlash({ name: meal.name, logId: null });
       }
-    });
+    }
   }
 
   /** Estimates a saved meal again; saving it makes a new version. */
@@ -496,9 +547,10 @@ export function LogMeal({
           disabled={
             !text.trim() || pending || draft !== null || similar !== null
           }
+          aria-busy={reading !== null}
           className="absolute top-1 right-1"
         >
-          <ArrowUp />
+          {reading ? <Loader2 className="animate-spin" /> : <ArrowUp />}
         </Button>
       </form>
 
@@ -536,6 +588,10 @@ export function LogMeal({
             ))}
           </ul>
         </section>
+      ) : null}
+
+      {reading && !draft ? (
+        <ReadingCard reestimate={reading.reestimate} slow={slow} />
       ) : null}
 
       {similar ? (
@@ -598,7 +654,7 @@ export function LogMeal({
         </p>
       ) : null}
 
-      {!draft && !similar && !showMatches && recent.length > 0 ? (
+      {!draft && !similar && !reading && !showMatches && recent.length > 0 ? (
         <section aria-label="Recent meals">
           <h2 className="mb-2 text-sm font-medium">Log again</h2>
           <ul className="flex flex-wrap gap-2">
@@ -608,11 +664,17 @@ export function LogMeal({
                   type="button"
                   disabled={pending}
                   onClick={() => relog(meal)}
+                  aria-busy={relogging === meal.id}
                   className="flex h-11 max-w-full items-center gap-1.5 rounded-full border bg-background px-4 text-sm transition-colors hover:bg-accent disabled:opacity-50"
                 >
+                  {relogging === meal.id ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin" />
+                  ) : null}
                   <span className="truncate">{meal.name}</span>
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {Math.round(meal.calories)} kcal
+                    {relogging === meal.id
+                      ? "Logging…"
+                      : `${Math.round(meal.calories)} kcal`}
                   </span>
                 </button>
               </li>
@@ -1200,4 +1262,50 @@ function shortDate(iso: string, timeZone: string): string {
     month: "short",
     day: "numeric",
   }).format(then);
+}
+
+type Reading = { text: string; reestimate: boolean };
+
+/** Placeholder shown while a line is read; replaced by the confirm card. */
+function ReadingCard({
+  reestimate,
+  slow,
+}: {
+  reestimate: boolean;
+  slow: boolean;
+}) {
+  return (
+    <Card aria-busy="true">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          {reestimate ? "Re-estimating…" : "Reading your meal…"}
+        </CardTitle>
+        <p
+          role="status"
+          aria-live="polite"
+          className="text-sm text-muted-foreground"
+        >
+          {slow ? "Still working…" : "Looking up the nutrition data."}
+        </p>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4" aria-hidden="true">
+        {[0, 1].map((i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <div className="h-4 w-2/5 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-3/5 animate-pulse rounded bg-muted" />
+            <div className="flex gap-2">
+              {[0, 1, 2, 3].map((j) => (
+                <div
+                  key={j}
+                  className="h-9 w-12 animate-pulse rounded-full bg-muted"
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+        <div className="h-11 animate-pulse rounded-md bg-muted" />
+      </CardContent>
+    </Card>
+  );
 }
