@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import { targetsForDate } from "@/server/day-targets";
 import { weightSummary } from "@/server/weight";
+import { stravaStatus } from "@/server/strava";
+import { stravaConfigured } from "@/server/strava/client";
+import { TrainingCard } from "./strava/training-card";
 import { kgToLb } from "@/lib/weight/trend";
 import { WeightCard, type WeightView } from "./weight/weight-card";
 import { suggestedSavedMeals } from "@/server/saved-meals";
@@ -24,7 +27,11 @@ type MealRow = {
 
 // The log box, today's remaining targets and today's meals. Reads cookies, so render it inside
 // <Suspense>.
-export async function Today() {
+export async function Today({
+  searchParams,
+}: {
+  searchParams: Promise<{ strava?: string | string[] }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
@@ -46,28 +53,39 @@ export async function Today() {
     today,
     Number(profile.max_loss_lb_per_week),
   );
-  const [{ data: meals }, recent, targets] = await Promise.all([
-    supabase
-      .from("meal_logs")
-      .select("id, logged_at, input_text, items, calories, protein_g")
-      .eq("user_id", user.id)
-      .eq("local_date", today)
-      .order("logged_at", { ascending: true }),
-    suggestedSavedMeals(user.id, profile.timezone),
-    targetsForDate(
-      user.id,
-      today,
-      {
-        ...profile,
-        units: profile.units === "metric" ? "metric" : "imperial",
-        long_run_distance_m: Number(profile.long_run_distance_m),
-      },
-      {
-        estimatedBaseline: weight.maintenance,
-        lossCorrection: weight.lossCorrection,
-      },
-    ),
-  ]);
+  const [{ data: meals }, recent, targets, strava, { data: pilates }, params] =
+    await Promise.all([
+      supabase
+        .from("meal_logs")
+        .select("id, logged_at, input_text, items, calories, protein_g")
+        .eq("user_id", user.id)
+        .eq("local_date", today)
+        .order("logged_at", { ascending: true }),
+      suggestedSavedMeals(user.id, profile.timezone),
+      targetsForDate(
+        user.id,
+        today,
+        {
+          ...profile,
+          units: profile.units === "metric" ? "metric" : "imperial",
+          long_run_distance_m: Number(profile.long_run_distance_m),
+        },
+        {
+          estimatedBaseline: weight.maintenance,
+          lossCorrection: weight.lossCorrection,
+        },
+      ),
+      stravaStatus(user.id),
+      supabase
+        .from("workouts")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("local_date", today)
+        .eq("type", "pilates")
+        .eq("source", "manual")
+        .limit(1),
+      searchParams,
+    ]);
 
   const rows = meals ?? [];
   const eaten = sumMacros(rows);
@@ -120,6 +138,14 @@ export async function Today() {
       </Card>
 
       <MealList meals={rows} timeZone={profile.timezone} />
+
+      <TrainingCard
+        stravaAvailable={stravaConfigured()}
+        connected={strava.connected}
+        lastSyncedAt={strava.lastSyncedAt}
+        pilatesToday={(pilates ?? []).length > 0}
+        result={typeof params.strava === "string" ? params.strava : null}
+      />
 
       <WeightCard
         view={weightView(
