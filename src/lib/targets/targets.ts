@@ -1,31 +1,6 @@
 // Plain, tested target math (CLAUDE.md rules 3 and 7). No AI involved.
 
-export type TargetProfile = {
-  protein_rest_g: number;
-  baseline_calories: number | null;
-  rest_day_deficit: number;
-  calorie_floor: number;
-};
-
-export type DayTargets = {
-  protein_g: number;
-  /** Null until a calorie baseline has been estimated. */
-  calories: number | null;
-};
-
-/**
- * Rest-day targets: baseline minus a small deficit, never below the floor.
- * Other day types arrive with Strava (Milestone 4).
- */
-export function restDayTargets(p: TargetProfile): DayTargets {
-  return {
-    protein_g: p.protein_rest_g,
-    calories:
-      p.baseline_calories === null
-        ? null
-        : Math.max(p.baseline_calories - p.rest_day_deficit, p.calorie_floor),
-  };
-}
+// Day types and calorie targets: see ./day-type.ts.
 
 export type Remaining = {
   /** How much is left to reach the target (never negative). */
