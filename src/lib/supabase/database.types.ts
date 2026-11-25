@@ -79,7 +79,7 @@ export type Database = {
       };
       day_targets: {
         Row: {
-          calories: number;
+          calories: number | null;
           created_at: string;
           date: string;
           day_type: string;
@@ -91,7 +91,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
-          calories: number;
+          calories?: number | null;
           created_at?: string;
           date: string;
           day_type: string;
@@ -102,7 +102,7 @@ export type Database = {
           user_id?: string;
         };
         Update: {
-          calories?: number;
+          calories?: number | null;
           created_at?: string;
           date?: string;
           day_type?: string;

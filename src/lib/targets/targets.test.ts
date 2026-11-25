@@ -1,30 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localDate, remaining, restDayTargets, sumMacros } from "./targets";
-
-const profile = {
-  protein_rest_g: 100,
-  baseline_calories: 2200,
-  rest_day_deficit: 250,
-  calorie_floor: 1600,
-};
-
-describe("restDayTargets", () => {
-  it("takes the deficit off the baseline", () => {
-    expect(restDayTargets(profile)).toEqual({ protein_g: 100, calories: 1950 });
-  });
-
-  it("never goes below the calorie floor", () => {
-    expect(
-      restDayTargets({ ...profile, baseline_calories: 1700 }).calories,
-    ).toBe(1600);
-  });
-
-  it("has no calorie target until a baseline exists", () => {
-    expect(
-      restDayTargets({ ...profile, baseline_calories: null }).calories,
-    ).toBeNull();
-  });
-});
+import { localDate, remaining, sumMacros } from "./targets";
 
 describe("remaining", () => {
   it("counts down to the target", () => {

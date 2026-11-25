@@ -4,13 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
+import { targetsForDate } from "@/server/day-targets";
 import { suggestedSavedMeals } from "@/server/saved-meals";
-import {
-  localDate,
-  remaining,
-  restDayTargets,
-  sumMacros,
-} from "@/lib/targets/targets";
+import { localDate, remaining, sumMacros } from "@/lib/targets/targets";
 import { LogMeal } from "./log/log-meal";
 import { deleteMealLog } from "./meals/actions";
 
@@ -34,7 +30,7 @@ export async function Today() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "timezone, protein_rest_g, baseline_calories, rest_day_deficit, calorie_floor",
+      "timezone, units, protein_rest_g, protein_strength_g, protein_run_g, protein_long_run_g, baseline_calories, rest_day_deficit, calorie_floor, long_run_distance_m",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -42,7 +38,7 @@ export async function Today() {
   if (!profile) return <TodaySkeleton />;
 
   const today = localDate(new Date(), profile.timezone);
-  const [{ data: meals }, recent] = await Promise.all([
+  const [{ data: meals }, recent, targets] = await Promise.all([
     supabase
       .from("meal_logs")
       .select("id, logged_at, input_text, items, calories, protein_g")
@@ -50,12 +46,15 @@ export async function Today() {
       .eq("local_date", today)
       .order("logged_at", { ascending: true }),
     suggestedSavedMeals(user.id, profile.timezone),
+    targetsForDate(user.id, today, {
+      ...profile,
+      units: profile.units === "metric" ? "metric" : "imperial",
+      long_run_distance_m: Number(profile.long_run_distance_m),
+    }),
   ]);
 
   const rows = meals ?? [];
   const eaten = sumMacros(rows);
-  // Day types arrive with Strava (Milestone 4); until then every day is a rest day.
-  const targets = restDayTargets(profile);
 
   return (
     <>
@@ -75,6 +74,7 @@ export async function Today() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Today</CardTitle>
+          <p className="text-sm text-muted-foreground">{targets.reason}</p>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
           <RemainingStat
