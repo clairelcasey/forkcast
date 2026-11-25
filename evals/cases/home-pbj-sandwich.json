@@ -1,0 +1,37 @@
+{
+  "id": "home-pbj-sandwich",
+  "input": "peanut butter and jelly sandwich",
+  "tags": [
+    "home",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "White bread",
+        "quantity": "2 slices (54 g)",
+        "calories": 144,
+        "protein_g": 4.8
+      },
+      {
+        "name": "Peanut butter",
+        "quantity": "2 tbsp (32 g)",
+        "calories": 191,
+        "protein_g": 7.1
+      },
+      {
+        "name": "Jam",
+        "quantity": "1 tbsp (20 g)",
+        "calories": 56,
+        "protein_g": 0.1
+      }
+    ],
+    "calories": 391,
+    "protein_g": 12.0
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Bread, white, commercially prepared (includes soft bread crumbs) (fdc 174924): 266 kcal, 8.85 g protein per 100 g × 54 g; Peanut butter, smooth style, without salt (fdc 172470): 598 kcal, 22.2 g protein per 100 g × 32 g; Jams and preserves (fdc 169641): 278 kcal, 0.37 g protein per 100 g × 20 g",
+    "checked_on": "2026-11-25"
+  }
+}

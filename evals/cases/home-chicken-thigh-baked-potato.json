@@ -1,0 +1,39 @@
+{
+  "id": "home-chicken-thigh-baked-potato",
+  "input": "roast chicken thigh and a baked potato with butter",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chicken thigh, cooked",
+        "quantity": "1 large thigh (116 g)",
+        "calories": 208,
+        "protein_g": 28.8
+      },
+      {
+        "name": "Baked potato",
+        "quantity": "1 medium (173 g)",
+        "calories": 161,
+        "protein_g": 4.3
+      },
+      {
+        "name": "Butter",
+        "quantity": "2 tsp (10 g)",
+        "calories": 72,
+        "protein_g": 0.1
+      }
+    ],
+    "calories": 441,
+    "protein_g": 33.2
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Chicken, broilers or fryers, thigh, meat only, cooked, roasted (fdc 172388): 179 kcal, 24.8 g protein per 100 g × 116 g; Potatoes, baked, flesh and skin, without salt (fdc 170093): 93.0 kcal, 2.5 g protein per 100 g × 173 g; Butter, salted (fdc 173410): 717 kcal, 0.85 g protein per 100 g × 10 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Butter amount unstated; 2 tsp assumed."
+}

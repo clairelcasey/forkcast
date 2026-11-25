@@ -1,0 +1,39 @@
+{
+  "id": "home-salmon-quinoa-asparagus",
+  "input": "salmon, a cup of quinoa and asparagus",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Salmon, cooked",
+        "quantity": "5 oz (140 g)",
+        "calories": 288,
+        "protein_g": 30.9
+      },
+      {
+        "name": "Quinoa, cooked",
+        "quantity": "1 cup (185 g)",
+        "calories": 222,
+        "protein_g": 8.1
+      },
+      {
+        "name": "Asparagus",
+        "quantity": "6 spears (90 g)",
+        "calories": 20,
+        "protein_g": 2.2
+      }
+    ],
+    "calories": 530,
+    "protein_g": 41.2
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Fish, salmon, Atlantic, farmed, cooked, dry heat (fdc 175168): 206 kcal, 22.1 g protein per 100 g × 140 g; Quinoa, cooked (fdc 168917): 120 kcal, 4.4 g protein per 100 g × 185 g; Asparagus, cooked, boiled, drained (fdc 168390): 22.0 kcal, 2.4 g protein per 100 g × 90 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Salmon fillet size unstated; 5 oz assumed."
+}

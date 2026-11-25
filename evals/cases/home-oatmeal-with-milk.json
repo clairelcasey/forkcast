@@ -1,0 +1,33 @@
+{
+  "id": "home-oatmeal-with-milk",
+  "input": "oatmeal made with milk",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Rolled oats (dry)",
+        "quantity": "1/2 cup (40 g)",
+        "calories": 152,
+        "protein_g": 5.3
+      },
+      {
+        "name": "2% milk",
+        "quantity": "1 cup (244 g)",
+        "calories": 122,
+        "protein_g": 8.1
+      }
+    ],
+    "calories": 274,
+    "protein_g": 13.4
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Cereals, oats, regular and quick, not fortified, dry (fdc 173904): 379 kcal, 13.2 g protein per 100 g × 40 g; Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D (fdc 171267): 50.0 kcal, 3.3 g protein per 100 g × 244 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Typical bowl: 1/2 cup oats cooked in 1 cup milk."
+}

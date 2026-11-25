@@ -1,0 +1,39 @@
+{
+  "id": "home-shrimp-rice-broccoli",
+  "input": "3 oz shrimp with a cup of rice and broccoli",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Shrimp, cooked",
+        "quantity": "3 oz (85 g)",
+        "calories": 101,
+        "protein_g": 19.4
+      },
+      {
+        "name": "White rice, cooked",
+        "quantity": "1 cup (158 g)",
+        "calories": 205,
+        "protein_g": 4.3
+      },
+      {
+        "name": "Broccoli",
+        "quantity": "1/2 cup (78 g)",
+        "calories": 27,
+        "protein_g": 1.9
+      }
+    ],
+    "calories": 333,
+    "protein_g": 25.6
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Crustaceans, shrimp, mixed species, cooked, moist heat (may contain additives to retain moisture) (fdc 171971): 119 kcal, 22.8 g protein per 100 g × 85 g; Rice, white, long-grain, regular, enriched, cooked (fdc 168878): 130 kcal, 2.69 g protein per 100 g × 158 g; Broccoli, cooked, boiled, drained, without salt (fdc 169967): 35.0 kcal, 2.38 g protein per 100 g × 78 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Broccoli amount unstated; 1/2 cup assumed."
+}

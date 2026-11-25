@@ -1,0 +1,27 @@
+{
+  "id": "home-can-of-beer",
+  "input": "a beer",
+  "tags": [
+    "home",
+    "drink",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Beer, regular",
+        "quantity": "12 fl oz (356 g)",
+        "calories": 153,
+        "protein_g": 1.6
+      }
+    ],
+    "calories": 153,
+    "protein_g": 1.6
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Alcoholic beverage, beer, regular, all (fdc 168746): 43.0 kcal, 0.46 g protein per 100 g × 356 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "'A beer' is one 12 oz can of regular beer."
+}

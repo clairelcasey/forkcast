@@ -1,0 +1,45 @@
+{
+  "id": "home-chicken-caesar-no-croutons",
+  "input": "chicken caesar salad, no croutons",
+  "tags": [
+    "home",
+    "mixed_bowl",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chicken breast, cooked",
+        "quantity": "3 oz (85 g)",
+        "calories": 140,
+        "protein_g": 26.4
+      },
+      {
+        "name": "Romaine",
+        "quantity": "2 cups (94 g)",
+        "calories": 16,
+        "protein_g": 1.2
+      },
+      {
+        "name": "Caesar dressing",
+        "quantity": "2 tbsp (30 g)",
+        "calories": 163,
+        "protein_g": 0.7
+      },
+      {
+        "name": "Parmesan",
+        "quantity": "1 tbsp (5 g)",
+        "calories": 21,
+        "protein_g": 1.4
+      }
+    ],
+    "calories": 340,
+    "protein_g": 29.7
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Chicken, broilers or fryers, breast, meat only, cooked, roasted (fdc 171477): 165 kcal, 31.0 g protein per 100 g × 85 g; Lettuce, cos or romaine, raw (fdc 169247): 17.0 kcal, 1.23 g protein per 100 g × 94 g; Salad dressing, caesar dressing, regular (fdc 169055): 542 kcal, 2.17 g protein per 100 g × 30 g; Cheese, parmesan, grated (fdc 171247): 420 kcal, 28.4 g protein per 100 g × 5 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "'No croutons' must not add croutons."
+}

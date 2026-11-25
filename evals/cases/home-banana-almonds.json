@@ -1,0 +1,32 @@
+{
+  "id": "home-banana-almonds",
+  "input": "a banana and a handful of almonds",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Banana",
+        "quantity": "1 medium (118 g)",
+        "calories": 105,
+        "protein_g": 1.3
+      },
+      {
+        "name": "Almonds",
+        "quantity": "a handful (28 g)",
+        "calories": 162,
+        "protein_g": 5.9
+      }
+    ],
+    "calories": 267,
+    "protein_g": 7.2
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Bananas, raw (fdc 173944): 89.0 kcal, 1.09 g protein per 100 g × 118 g; Nuts, almonds (fdc 170567): 579 kcal, 21.2 g protein per 100 g × 28 g",
+    "checked_on": "2026-11-25"
+  }
+}

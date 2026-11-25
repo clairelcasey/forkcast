@@ -1,0 +1,58 @@
+name: Eval
+
+# Runs the meal-parser eval set when the AI code, the nutrition search or
+# the eval cases change, and posts the summary on the PR. Uses the real
+# Claude parser (costs a few cents per run) only when the repository has
+# ANTHROPIC_API_KEY and USDA_API_KEY secrets; otherwise the stub, which
+# only checks the harness.
+
+on:
+  pull_request:
+    paths:
+      - "src/ai/**"
+      - "src/server/nutrition/**"
+      - "evals/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    name: Meal parser eval
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run eval
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          USDA_API_KEY: ${{ secrets.USDA_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ -n "$USDA_API_KEY" ]; then
+            pnpm eval --parser claude
+          else
+            pnpm eval --parser stub
+            printf '\n_No `ANTHROPIC_API_KEY` / `USDA_API_KEY` repository secrets, so this was a stub run. Add them to measure the real parser._\n' >> evals/results/latest.md
+          fi
+
+      - name: Post summary on the PR
+        # Forked PRs get no secrets or write token; skip the comment there.
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR" --edit-last --body-file evals/results/latest.md \
+            || gh pr comment "$PR" --body-file evals/results/latest.md

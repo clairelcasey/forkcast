@@ -1,0 +1,25 @@
+{
+  "id": "home-dark-chocolate-squares",
+  "input": "a couple squares of dark chocolate",
+  "tags": [
+    "home",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Dark chocolate 70-85%",
+        "quantity": "2 squares (20 g)",
+        "calories": 120,
+        "protein_g": 1.6
+      }
+    ],
+    "calories": 120,
+    "protein_g": 1.6
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Chocolate, dark, 70-85% cacao solids (fdc 170273): 598 kcal, 7.79 g protein per 100 g × 20 g",
+    "checked_on": "2026-11-25"
+  }
+}

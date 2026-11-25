@@ -1,0 +1,33 @@
+{
+  "id": "home-half-bagel-cream-cheese",
+  "input": "half a bagel with cream cheese",
+  "tags": [
+    "home",
+    "shared_plate",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Plain bagel",
+        "quantity": "half (49 g)",
+        "calories": 129,
+        "protein_g": 5.2
+      },
+      {
+        "name": "Cream cheese",
+        "quantity": "1 tbsp (15 g)",
+        "calories": 52,
+        "protein_g": 0.9
+      }
+    ],
+    "calories": 181,
+    "protein_g": 6.1
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Bagels, plain, enriched, with calcium propionate (includes onion, poppy, sesame) (fdc 174899): 264 kcal, 10.6 g protein per 100 g × 49 g; Cheese, cream (fdc 173418): 350 kcal, 6.15 g protein per 100 g × 15 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Cream cheese amount unstated; 1 tbsp assumed."
+}

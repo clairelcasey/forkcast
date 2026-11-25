@@ -1,0 +1,39 @@
+{
+  "id": "home-greek-yogurt-honey-walnuts",
+  "input": "greek yogurt with a spoon of honey and some walnuts",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Greek yogurt, plain nonfat",
+        "quantity": "1 container (170 g)",
+        "calories": 104,
+        "protein_g": 17.5
+      },
+      {
+        "name": "Honey",
+        "quantity": "1 tbsp (21 g)",
+        "calories": 64,
+        "protein_g": 0.1
+      },
+      {
+        "name": "Walnuts",
+        "quantity": "2 tbsp (14 g)",
+        "calories": 92,
+        "protein_g": 2.1
+      }
+    ],
+    "calories": 260,
+    "protein_g": 19.7
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Yogurt, Greek, plain, nonfat (fdc 330137): 61.0 kcal, 10.3 g protein per 100 g × 170 g; Honey (fdc 169640): 304 kcal, 0.3 g protein per 100 g × 21 g; Nuts, walnuts, english (fdc 170187): 654 kcal, 15.2 g protein per 100 g × 14 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "'A spoon' is 1 tbsp; 'some walnuts' is 2 tbsp."
+}

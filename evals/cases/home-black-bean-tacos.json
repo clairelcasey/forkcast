@@ -1,0 +1,43 @@
+{
+  "id": "home-black-bean-tacos",
+  "input": "two black bean tacos with cheese and salsa",
+  "tags": [
+    "home",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Corn tortillas",
+        "quantity": "2 small (52 g)",
+        "calories": 112,
+        "protein_g": 2.2
+      },
+      {
+        "name": "Black beans",
+        "quantity": "1/2 cup (86 g)",
+        "calories": 114,
+        "protein_g": 7.6
+      },
+      {
+        "name": "Cheddar",
+        "quantity": "2 tbsp shredded (14 g)",
+        "calories": 57,
+        "protein_g": 3.3
+      },
+      {
+        "name": "Salsa",
+        "quantity": "2 tbsp (32 g)",
+        "calories": 9,
+        "protein_g": 0.5
+      }
+    ],
+    "calories": 292,
+    "protein_g": 13.6
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Tortilla, corn, shelf stable (fdc 2758997): 215 kcal, 4.31 g protein per 100 g × 52 g; Beans, black, mature seeds, cooked, boiled, without salt (fdc 173735): 132 kcal, 8.86 g protein per 100 g × 86 g; Cheese, cheddar (fdc 328637): 408 kcal, 23.3 g protein per 100 g × 14 g; Sauce, salsa, ready-to-serve (fdc 746777): 29.0 kcal, 1.44 g protein per 100 g × 32 g",
+    "checked_on": "2026-11-25"
+  }
+}

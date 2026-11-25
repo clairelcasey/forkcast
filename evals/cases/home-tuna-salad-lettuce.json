@@ -1,0 +1,37 @@
+{
+  "id": "home-tuna-salad-lettuce",
+  "input": "can of tuna with a spoon of mayo on lettuce",
+  "tags": [
+    "home",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Tuna, canned in water",
+        "quantity": "1 can drained (85 g)",
+        "calories": 76,
+        "protein_g": 16.1
+      },
+      {
+        "name": "Mayonnaise",
+        "quantity": "1 tbsp (14 g)",
+        "calories": 95,
+        "protein_g": 0.1
+      },
+      {
+        "name": "Romaine",
+        "quantity": "1 cup (47 g)",
+        "calories": 8,
+        "protein_g": 0.6
+      }
+    ],
+    "calories": 179,
+    "protein_g": 16.8
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Fish, tuna, light, canned in water, drained solids (fdc 334194): 90.0 kcal, 19.0 g protein per 100 g × 85 g; Salad dressing, mayonnaise, regular (fdc 171009): 680 kcal, 0.96 g protein per 100 g × 14 g; Lettuce, cos or romaine, raw (fdc 169247): 17.0 kcal, 1.23 g protein per 100 g × 47 g",
+    "checked_on": "2026-11-25"
+  }
+}

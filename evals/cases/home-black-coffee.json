@@ -1,0 +1,26 @@
+{
+  "id": "home-black-coffee",
+  "input": "cup of black coffee",
+  "tags": [
+    "home",
+    "drink"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Brewed coffee",
+        "quantity": "1 cup (240 ml)",
+        "calories": 2,
+        "protein_g": 0.3
+      }
+    ],
+    "calories": 2,
+    "protein_g": 0.3
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Beverages, coffee, brewed, prepared with tap water (fdc 171890): 1.0 kcal, 0.12 g protein per 100 g × 240 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Near-zero calories: tests that tiny values stay tiny."
+}

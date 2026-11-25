@@ -1,0 +1,24 @@
+{
+  "id": "home-cup-of-edamame",
+  "input": "a cup of edamame",
+  "tags": [
+    "home"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Edamame, shelled",
+        "quantity": "1 cup (155 g)",
+        "calories": 188,
+        "protein_g": 18.4
+      }
+    ],
+    "calories": 188,
+    "protein_g": 18.4
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Edamame, frozen, prepared (fdc 168411): 121 kcal, 11.9 g protein per 100 g × 155 g",
+    "checked_on": "2026-11-25"
+  }
+}

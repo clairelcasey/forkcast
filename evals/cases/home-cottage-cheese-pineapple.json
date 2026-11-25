@@ -1,0 +1,33 @@
+{
+  "id": "home-cottage-cheese-pineapple",
+  "input": "cottage cheese with pineapple",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Cottage cheese, 2%",
+        "quantity": "1/2 cup (113 g)",
+        "calories": 95,
+        "protein_g": 12.4
+      },
+      {
+        "name": "Pineapple",
+        "quantity": "1/2 cup (82 g)",
+        "calories": 41,
+        "protein_g": 0.4
+      }
+    ],
+    "calories": 136,
+    "protein_g": 12.8
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Cheese, cottage, lowfat, 2% milkfat (fdc 328841): 84.0 kcal, 11.0 g protein per 100 g × 113 g; Pineapple, raw, all varieties (fdc 169124): 50.0 kcal, 0.54 g protein per 100 g × 82 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Half a cup of each assumed."
+}

@@ -1,0 +1,26 @@
+{
+  "id": "home-bowl-of-popcorn",
+  "input": "a bowl of popcorn",
+  "tags": [
+    "home",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Popcorn, air-popped",
+        "quantity": "3 cups (24 g)",
+        "calories": 93,
+        "protein_g": 3.1
+      }
+    ],
+    "calories": 93,
+    "protein_g": 3.1
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Snacks, popcorn, air-popped (fdc 167959): 387 kcal, 12.9 g protein per 100 g × 24 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "'A bowl' is 3 cups."
+}
