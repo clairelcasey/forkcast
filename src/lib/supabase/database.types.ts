@@ -464,6 +464,7 @@ export type Database = {
           athlete_id: number;
           created_at: string;
           expires_at: string | null;
+          last_synced_at: string | null;
           refresh_token_encrypted: string;
           scopes: string[];
           updated_at: string;
@@ -475,6 +476,7 @@ export type Database = {
           athlete_id: number;
           created_at?: string;
           expires_at?: string | null;
+          last_synced_at?: string | null;
           refresh_token_encrypted: string;
           scopes?: string[];
           updated_at?: string;
@@ -485,6 +487,7 @@ export type Database = {
           athlete_id?: number;
           created_at?: string;
           expires_at?: string | null;
+          last_synced_at?: string | null;
           refresh_token_encrypted?: string;
           scopes?: string[];
           updated_at?: string;
@@ -575,6 +578,10 @@ export type Database = {
     };
     Functions: {
       hook_before_user_created: { Args: { event: Json }; Returns: Json };
+      mark_strava_synced: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
       record_saved_meal: {
         Args: {
           p_calories: number;
@@ -584,6 +591,16 @@ export type Database = {
           p_protein_g: number;
         };
         Returns: string;
+      };
+      save_strava_connection: {
+        Args: {
+          p_access_token_encrypted: string;
+          p_athlete_id: number;
+          p_expires_at: string;
+          p_refresh_token_encrypted: string;
+          p_scopes: string[];
+        };
+        Returns: undefined;
       };
       search_saved_meals: {
         Args: { p_limit?: number; p_query: string };
@@ -597,6 +614,15 @@ export type Database = {
           protein_g: number;
           score: number;
           use_count: number;
+        }[];
+      };
+      strava_tokens: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          access_token_encrypted: string;
+          athlete_id: number;
+          expires_at: string;
+          refresh_token_encrypted: string;
         }[];
       };
       use_saved_meal: { Args: { p_id: string }; Returns: string };
