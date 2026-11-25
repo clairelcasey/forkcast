@@ -142,4 +142,22 @@ describe("dayTargets", () => {
       dayTargets([run(8000, null)], { ...profile, units: "metric" }).reason,
     ).toBe("Run day (8.0 km)");
   });
+
+  it("uses the estimated baseline when the profile has none", () => {
+    const none = { ...profile, baseline_calories: null };
+    expect(dayTargets([], none, { estimatedBaseline: 2300 }).calories).toBe(
+      2050,
+    );
+    // A profile baseline wins over the estimate.
+    expect(dayTargets([], profile, { estimatedBaseline: 3000 }).calories).toBe(
+      1950,
+    );
+  });
+
+  it("guardrail: adds the loss-rate correction and says why", () => {
+    expect(dayTargets([], profile, { lossCorrection: 250 })).toMatchObject({
+      calories: 2200,
+      reason: "Rest day · +250 to slow weight loss",
+    });
+  });
 });

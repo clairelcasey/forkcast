@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   dayTargets,
   type DayTargets,
+  type TargetAdjustments,
   type TargetProfile,
 } from "@/lib/targets/day-type";
 
@@ -14,6 +15,7 @@ export async function targetsForDate(
   userId: string,
   date: string,
   profile: TargetProfile,
+  adjustments: TargetAdjustments = {},
 ): Promise<DayTargets> {
   const supabase = await createClient();
   const [{ data: workouts }, { data: saved }] = await Promise.all([
@@ -38,6 +40,7 @@ export async function targetsForDate(
         w.calories_estimate === null ? null : Number(w.calories_estimate),
     })),
     profile,
+    adjustments,
   );
 
   const changed =
