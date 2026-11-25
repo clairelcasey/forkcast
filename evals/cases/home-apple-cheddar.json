@@ -1,0 +1,32 @@
+{
+  "id": "home-apple-cheddar",
+  "input": "an apple and an ounce of cheddar",
+  "tags": [
+    "home",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Apple",
+        "quantity": "1 medium (182 g)",
+        "calories": 95,
+        "protein_g": 0.5
+      },
+      {
+        "name": "Cheddar",
+        "quantity": "1 oz (28 g)",
+        "calories": 114,
+        "protein_g": 6.5
+      }
+    ],
+    "calories": 209,
+    "protein_g": 7.0
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Apples, raw, with skin (fdc 171688): 52 kcal, 0.26 g protein per 100 g × 182 g; Cheese, cheddar (fdc 328637): 408 kcal, 23.3 g protein per 100 g × 28 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Apple: USDA SR Legacy 171688 (52 kcal, 0.26 g per 100 g)."
+}

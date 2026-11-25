@@ -1,0 +1,38 @@
+{
+  "id": "home-lentil-soup",
+  "input": "big bowl of lentil soup",
+  "tags": [
+    "home",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Lentils, cooked",
+        "quantity": "1 cup (198 g)",
+        "calories": 230,
+        "protein_g": 17.9
+      },
+      {
+        "name": "Carrots, cooked",
+        "quantity": "1/2 cup (78 g)",
+        "calories": 27,
+        "protein_g": 0.6
+      },
+      {
+        "name": "Olive oil",
+        "quantity": "1 tsp (5 g)",
+        "calories": 44,
+        "protein_g": 0.0
+      }
+    ],
+    "calories": 301,
+    "protein_g": 18.5
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Lentils, mature seeds, cooked, boiled, without salt (fdc 172421): 116 kcal, 9.02 g protein per 100 g × 198 g; Carrots, cooked, boiled, drained, without salt (fdc 170394): 35.0 kcal, 0.76 g protein per 100 g × 78 g; Oil, olive, salad or cooking (fdc 171413): 884 kcal, 0.0 g protein per 100 g × 5 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Home soup made from the listed ingredients; one big bowl."
+}

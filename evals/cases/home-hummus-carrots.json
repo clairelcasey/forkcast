@@ -1,0 +1,32 @@
+{
+  "id": "home-hummus-carrots",
+  "input": "hummus and baby carrots",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Hummus",
+        "quantity": "1/4 cup (60 g)",
+        "calories": 142,
+        "protein_g": 4.7
+      },
+      {
+        "name": "Baby carrots",
+        "quantity": "8 carrots (61 g)",
+        "calories": 25,
+        "protein_g": 0.6
+      }
+    ],
+    "calories": 167,
+    "protein_g": 5.3
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Hummus, commercial (fdc 174289): 237 kcal, 7.78 g protein per 100 g × 60 g; Carrots, raw (fdc 170393): 41.0 kcal, 0.93 g protein per 100 g × 61 g",
+    "checked_on": "2026-11-25"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "home-large-orange-juice",
+  "input": "large glass of orange juice",
+  "tags": [
+    "home",
+    "drink",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Orange juice",
+        "quantity": "large glass (360 ml)",
+        "calories": 176,
+        "protein_g": 2.4
+      }
+    ],
+    "calories": 176,
+    "protein_g": 2.4
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Orange juice, chilled, includes from concentrate (fdc 169100): 49.0 kcal, 0.68 g protein per 100 g × 360 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "'Large glass' is about 12 fl oz."
+}

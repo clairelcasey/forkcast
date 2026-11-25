@@ -1,0 +1,38 @@
+{
+  "id": "home-tofu-scramble-spinach",
+  "input": "tofu scramble with spinach",
+  "tags": [
+    "home",
+    "multi_item",
+    "vague_amount"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Firm tofu",
+        "quantity": "1/2 cup (126 g)",
+        "calories": 181,
+        "protein_g": 21.8
+      },
+      {
+        "name": "Spinach, cooked",
+        "quantity": "1/2 cup (90 g)",
+        "calories": 21,
+        "protein_g": 2.7
+      },
+      {
+        "name": "Olive oil",
+        "quantity": "1 tsp (5 g)",
+        "calories": 44,
+        "protein_g": 0.0
+      }
+    ],
+    "calories": 246,
+    "protein_g": 24.5
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Tofu, raw, firm, prepared with calcium sulfate (fdc 172475): 144 kcal, 17.3 g protein per 100 g × 126 g; Spinach, cooked, boiled, drained, without salt (fdc 168463): 23.0 kcal, 2.97 g protein per 100 g × 90 g; Oil, olive, salad or cooking (fdc 171413): 884 kcal, 0.0 g protein per 100 g × 5 g",
+    "checked_on": "2026-11-25"
+  }
+}

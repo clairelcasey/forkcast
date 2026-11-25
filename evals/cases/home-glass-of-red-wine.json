@@ -1,0 +1,25 @@
+{
+  "id": "home-glass-of-red-wine",
+  "input": "glass of red wine",
+  "tags": [
+    "home",
+    "drink"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Red wine",
+        "quantity": "5 fl oz (147 g)",
+        "calories": 125,
+        "protein_g": 0.1
+      }
+    ],
+    "calories": 125,
+    "protein_g": 0.1
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Alcoholic beverage, wine, table, red (fdc 173190): 85.0 kcal, 0.07 g protein per 100 g × 147 g",
+    "checked_on": "2026-11-25"
+  }
+}

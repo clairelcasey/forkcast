@@ -1,0 +1,26 @@
+{
+  "id": "home-shared-ice-cream",
+  "input": "shared a bowl of vanilla ice cream",
+  "tags": [
+    "home",
+    "shared_plate"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Vanilla ice cream",
+        "quantity": "half of 1 cup (66 g)",
+        "calories": 137,
+        "protein_g": 2.3
+      }
+    ],
+    "calories": 137,
+    "protein_g": 2.3
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Ice creams, vanilla (fdc 167575): 207 kcal, 3.5 g protein per 100 g × 66 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Half of a 1-cup (132 g) bowl."
+}

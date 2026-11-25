@@ -1,0 +1,45 @@
+{
+  "id": "home-chicken-stir-fry-rice",
+  "input": "chicken stir fry with veggies over a cup of rice",
+  "tags": [
+    "home",
+    "mixed_bowl",
+    "multi_item"
+  ],
+  "expected": {
+    "items": [
+      {
+        "name": "Chicken breast, cooked",
+        "quantity": "120 g",
+        "calories": 198,
+        "protein_g": 37.2
+      },
+      {
+        "name": "Mixed vegetables",
+        "quantity": "1 cup (150 g)",
+        "calories": 98,
+        "protein_g": 4.3
+      },
+      {
+        "name": "White rice, cooked",
+        "quantity": "1 cup (158 g)",
+        "calories": 205,
+        "protein_g": 4.3
+      },
+      {
+        "name": "Olive oil",
+        "quantity": "2 tsp (9 g)",
+        "calories": 80,
+        "protein_g": 0.0
+      }
+    ],
+    "calories": 581,
+    "protein_g": 45.8
+  },
+  "source": {
+    "kind": "made_up",
+    "basis": "USDA FoodData Central: Chicken, broilers or fryers, breast, meat only, cooked, roasted (fdc 171477): 165 kcal, 31.0 g protein per 100 g × 120 g; Vegetables, mixed, frozen, cooked, boiled, drained, without salt (fdc 170472): 65.0 kcal, 2.86 g protein per 100 g × 150 g; Rice, white, long-grain, regular, enriched, cooked (fdc 168878): 130 kcal, 2.69 g protein per 100 g × 158 g; Oil, olive, salad or cooking (fdc 171413): 884 kcal, 0.0 g protein per 100 g × 9 g",
+    "checked_on": "2026-11-25"
+  },
+  "notes": "Cooking oil unstated; 2 tsp assumed."
+}
