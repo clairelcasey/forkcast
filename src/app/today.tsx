@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
-import { recentSavedMeals } from "@/server/saved-meals";
+import { suggestedSavedMeals } from "@/server/saved-meals";
 import {
   localDate,
   remaining,
@@ -49,7 +49,7 @@ export async function Today() {
       .eq("user_id", user.id)
       .eq("local_date", today)
       .order("logged_at", { ascending: true }),
-    recentSavedMeals(user.id),
+    suggestedSavedMeals(user.id, profile.timezone),
   ]);
 
   const rows = meals ?? [];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUp, Plus, X } from "lucide-react";
 import type { Confidence, ParsedItem } from "@/ai/types";
@@ -25,7 +25,12 @@ import {
 } from "@/lib/offline/queue";
 import { cn } from "@/lib/utils";
 import { deleteMealLog } from "../meals/actions";
-import { parseMealText, saveMealLog } from "./actions";
+import {
+  parseMealText,
+  saveMealLog,
+  suggestSavedMeals,
+  type SuggestedMeal,
+} from "./actions";
 
 type DraftItem = {
   key: string;
@@ -166,6 +171,26 @@ export function LogMeal({
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [pending, startTransition] = useTransition();
   const [flash, setFlash] = useState<Flash | null>(null);
+  const [matches, setMatches] = useState<SuggestedMeal[]>([]);
+  const [similar, setSimilar] = useState<Similar | null>(null);
+  const latestQuery = useRef(0);
+
+  // Type-ahead: saved meals matching what's typed so far (debounced).
+  useEffect(() => {
+    const query = text.trim();
+    if (draft || similar || !online || query.length < 2) return;
+    const id = ++latestQuery.current;
+    const timer = setTimeout(() => {
+      suggestSavedMeals(query)
+        .then((found) => {
+          if (id === latestQuery.current) setMatches(found);
+        })
+        .catch(() => {});
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [text, draft, similar, online]);
+  const showMatches =
+    !draft && !similar && text.trim().length >= 2 && matches.length > 0;
 
   // The "Logged … Undo" note fades after a few seconds.
   useEffect(() => {
@@ -240,6 +265,7 @@ export function LogMeal({
     inputText: string,
     base: Pick<Draft, "clientId" | "typedAt" | "fromQueue">,
     reestimate?: Pick<Draft, "savedMealId" | "saved">,
+    { skipSimilar = false }: { skipSimilar?: boolean } = {},
   ) {
     const manualDraft = (note: string): Draft => ({
       ...base,
@@ -257,6 +283,7 @@ export function LogMeal({
       try {
         const result = await parseMealText(inputText, {
           reestimate: Boolean(reestimate),
+          skipSimilar,
         });
         if (result.kind === "parsed") {
           setDraft({
@@ -294,6 +321,10 @@ export function LogMeal({
             items,
           });
         } else {
+          if (result.kind === "similar") {
+            setSimilar({ meal: result.meal, inputText, base });
+            return;
+          }
           setDraft(manualDraft(result.reason));
         }
       } catch {
@@ -306,7 +337,7 @@ export function LogMeal({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const inputText = text.trim();
-    if (!inputText || pending || draft) return;
+    if (!inputText || pending || draft || similar) return;
     openDraft(inputText, {
       clientId: crypto.randomUUID(),
       typedAt: new Date().toISOString(),
@@ -324,6 +355,40 @@ export function LogMeal({
   }
 
   /** One tap logs a recent meal as is; late at night it asks for the day. */
+  /** Opens a saved meal on the confirm card (type-ahead, "same as?"). */
+  function openSaved(
+    meal: SuggestedMeal,
+    inputText: string,
+    base: Pick<Draft, "clientId" | "typedAt" | "fromQueue">,
+  ) {
+    const items = meal.items.map(savedToDraftItem);
+    setMatches([]);
+    setSimilar(null);
+    setDraft({
+      ...base,
+      inputText,
+      source: "cache",
+      savedMealId: meal.id,
+      saved: {
+        name: meal.name,
+        nickname: meal.nickname,
+        snapshot: itemsSnapshot(items),
+      },
+      note: `Saved meal · logged ${timesLabel(meal.useCount)}`,
+      items,
+    });
+  }
+
+  function pickMatch(meal: SuggestedMeal) {
+    if (draft || pending) return;
+    setText(meal.name);
+    openSaved(meal, meal.name, {
+      clientId: crypto.randomUUID(),
+      typedAt: new Date().toISOString(),
+      fromQueue: false,
+    });
+  }
+
   function relog(meal: RecentMeal) {
     if (draft || pending) return;
     const base = {
@@ -421,14 +486,16 @@ export function LogMeal({
           enterKeyHint="go"
           autoComplete="off"
           maxLength={500}
-          disabled={pending || draft !== null}
+          disabled={pending || draft !== null || similar !== null}
           className="pr-12"
         />
         <Button
           type="submit"
           size="icon"
           aria-label="Log it"
-          disabled={!text.trim() || pending || draft !== null}
+          disabled={
+            !text.trim() || pending || draft !== null || similar !== null
+          }
           className="absolute top-1 right-1"
         >
           <ArrowUp />
@@ -439,6 +506,75 @@ export function LogMeal({
         <p className="-mt-3 text-sm text-muted-foreground">
           Offline. Meals you save will sync when you&apos;re back online.
         </p>
+      ) : null}
+
+      {showMatches ? (
+        <section aria-label="Matching saved meals" className="-mt-3">
+          <ul className="divide-y overflow-hidden rounded-xl border">
+            {matches.map((meal) => (
+              <li key={meal.id}>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => pickMatch(meal)}
+                  className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors hover:bg-accent disabled:opacity-50"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{meal.name}</span>
+                    {meal.nickname ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {meal.nickname}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                    {Math.round(meal.calories)} kcal ·{" "}
+                    {Math.round(meal.protein_g)}g
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {similar ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Same as your {similar.meal.name}
+              {similar.meal.lastUsedAt
+                ? ` from ${shortDate(similar.meal.lastUsedAt, timeZone)}`
+                : ""}
+              ?
+            </CardTitle>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {Math.round(similar.meal.calories)} kcal ·{" "}
+              {Math.round(similar.meal.protein_g)}g protein
+            </p>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              onClick={() =>
+                openSaved(similar.meal, similar.inputText, similar.base)
+              }
+            >
+              Yes, use it
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const { inputText, base } = similar;
+                setSimilar(null);
+                openDraft(inputText, base, undefined, { skipSimilar: true });
+              }}
+            >
+              No, it&apos;s new
+            </Button>
+          </CardContent>
+        </Card>
       ) : null}
 
       {flash ? (
@@ -462,7 +598,7 @@ export function LogMeal({
         </p>
       ) : null}
 
-      {!draft && recent.length > 0 ? (
+      {!draft && !similar && !showMatches && recent.length > 0 ? (
         <section aria-label="Recent meals">
           <h2 className="mb-2 text-sm font-medium">Log again</h2>
           <ul className="flex flex-wrap gap-2">
@@ -1043,3 +1179,25 @@ function formatPortion(p: number) {
 const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 type Flash = { name: string; logId: string | null; error?: string };
+
+type Similar = {
+  meal: SuggestedMeal;
+  inputText: string;
+  base: Pick<Draft, "clientId" | "typedAt" | "fromQueue">;
+};
+
+/** "Nov 12", or "today" / "yesterday" in the user's timezone. */
+function shortDate(iso: string, timeZone: string): string {
+  const day = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone }).format(d);
+  const now = new Date();
+  const then = new Date(iso);
+  if (day(then) === day(now)) return "today";
+  if (day(then) === day(new Date(now.getTime() - 86_400_000)))
+    return "yesterday";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    month: "short",
+    day: "numeric",
+  }).format(then);
+}

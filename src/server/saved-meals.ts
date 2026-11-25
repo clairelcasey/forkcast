@@ -2,6 +2,7 @@ import "server-only";
 import { mealItemsSchema, type MealItem } from "@/lib/meals/item-schema";
 import { matchNickname } from "@/lib/meals/modifiers";
 import { mealMatchKey } from "@/lib/meals/normalize";
+import { rankByContext, resolveVersions } from "@/lib/meals/suggest";
 import { createClient } from "@/lib/supabase/server";
 
 // Saved meals: the cache that lets a repeat meal skip the AI call. Every
@@ -195,4 +196,96 @@ export async function setNickname(id: string, nickname: string | null) {
     .update({ nickname })
     .eq("id", id);
   return { error };
+}
+
+/** Saved meals that fuzzily match a partly typed line, best first. */
+export async function searchSavedMeals(
+  text: string,
+  { limit = 5, minScore = 0.3 }: { limit?: number; minScore?: number } = {},
+): Promise<(SavedMeal & { score: number })[]> {
+  const query = mealMatchKey(text);
+  if (query.length < 2) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("search_saved_meals", {
+    p_query: query,
+    p_limit: limit,
+  });
+  if (error) {
+    console.error("search_saved_meals failed", error.code);
+    return [];
+  }
+  return (data ?? [])
+    .filter((row) => row.score >= minScore)
+    .map((row) => {
+      const meal = toSavedMeal(row);
+      return meal ? { ...meal, score: row.score } : null;
+    })
+    .filter((m): m is SavedMeal & { score: number } => m !== null);
+}
+
+const SUGGEST_LOOKBACK_DAYS = 90;
+
+/**
+ * Saved meals to offer before anything is typed: ranked by time of day,
+ * weekday, recency and frequency, topped up with the most recent ones.
+ */
+export async function suggestedSavedMeals(
+  userId: string,
+  timeZone: string,
+  limit = 5,
+): Promise<SavedMeal[]> {
+  const supabase = await createClient();
+  const since = new Date(
+    Date.now() - SUGGEST_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const [{ data: logs }, { data: versions }] = await Promise.all([
+    supabase
+      .from("meal_logs")
+      .select("saved_meal_id, logged_at")
+      .eq("user_id", userId)
+      .not("saved_meal_id", "is", null)
+      .gte("logged_at", since),
+    supabase
+      .from("saved_meals")
+      .select("id, superseded_by")
+      .eq("user_id", userId),
+  ]);
+
+  const current = resolveVersions(versions ?? []);
+  const ranked = rankByContext(
+    (logs ?? []).map((l) => ({
+      savedMealId: current(l.saved_meal_id!),
+      loggedAt: new Date(l.logged_at),
+    })),
+    new Date(),
+    timeZone,
+  );
+  const ids = ranked.slice(0, limit).map((r) => r.savedMealId);
+
+  const byId = new Map<string, SavedMeal>();
+  if (ids.length > 0) {
+    const { data } = await supabase
+      .from("saved_meals")
+      .select(COLUMNS)
+      .eq("user_id", userId)
+      .in("id", ids)
+      .is("superseded_by", null)
+      .eq("archived", false);
+    for (const row of data ?? []) {
+      const meal = toSavedMeal(row);
+      if (meal) byId.set(meal.id, meal);
+    }
+  }
+  const suggested = ids
+    .map((id) => byId.get(id))
+    .filter((m): m is SavedMeal => Boolean(m));
+  if (suggested.length >= limit) return suggested;
+
+  // Top up with recently used meals not already listed.
+  const recent = await recentSavedMeals(userId, limit * 2);
+  for (const meal of recent) {
+    if (suggested.length >= limit) break;
+    if (!suggested.some((m) => m.id === meal.id)) suggested.push(meal);
+  }
+  return suggested;
 }

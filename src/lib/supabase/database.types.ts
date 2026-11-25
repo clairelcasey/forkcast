@@ -585,6 +585,20 @@ export type Database = {
         };
         Returns: string;
       };
+      search_saved_meals: {
+        Args: { p_limit?: number; p_query: string };
+        Returns: {
+          calories: number;
+          id: string;
+          items: Json;
+          last_used_at: string;
+          name: string;
+          nickname: string;
+          protein_g: number;
+          score: number;
+          use_count: number;
+        }[];
+      };
       use_saved_meal: { Args: { p_id: string }; Returns: string };
       version_saved_meal: {
         Args: {
