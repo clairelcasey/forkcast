@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import { targetsForDate } from "@/server/day-targets";
+import { weightSummary } from "@/server/weight";
+import { kgToLb } from "@/lib/weight/trend";
+import { WeightCard, type WeightView } from "./weight/weight-card";
 import { suggestedSavedMeals } from "@/server/saved-meals";
 import { localDate, remaining, sumMacros } from "@/lib/targets/targets";
 import { LogMeal } from "./log/log-meal";
@@ -30,7 +33,7 @@ export async function Today() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "timezone, units, protein_rest_g, protein_strength_g, protein_run_g, protein_long_run_g, baseline_calories, rest_day_deficit, calorie_floor, long_run_distance_m",
+      "timezone, units, protein_rest_g, protein_strength_g, protein_run_g, protein_long_run_g, baseline_calories, rest_day_deficit, calorie_floor, long_run_distance_m, max_loss_lb_per_week",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -38,6 +41,11 @@ export async function Today() {
   if (!profile) return <TodaySkeleton />;
 
   const today = localDate(new Date(), profile.timezone);
+  const weight = await weightSummary(
+    user.id,
+    today,
+    Number(profile.max_loss_lb_per_week),
+  );
   const [{ data: meals }, recent, targets] = await Promise.all([
     supabase
       .from("meal_logs")
@@ -46,11 +54,19 @@ export async function Today() {
       .eq("local_date", today)
       .order("logged_at", { ascending: true }),
     suggestedSavedMeals(user.id, profile.timezone),
-    targetsForDate(user.id, today, {
-      ...profile,
-      units: profile.units === "metric" ? "metric" : "imperial",
-      long_run_distance_m: Number(profile.long_run_distance_m),
-    }),
+    targetsForDate(
+      user.id,
+      today,
+      {
+        ...profile,
+        units: profile.units === "metric" ? "metric" : "imperial",
+        long_run_distance_m: Number(profile.long_run_distance_m),
+      },
+      {
+        estimatedBaseline: weight.maintenance,
+        lossCorrection: weight.lossCorrection,
+      },
+    ),
   ]);
 
   const rows = meals ?? [];
@@ -104,6 +120,14 @@ export async function Today() {
       </Card>
 
       <MealList meals={rows} timeZone={profile.timezone} />
+
+      <WeightCard
+        view={weightView(
+          weight,
+          profile.units === "metric" ? "kg" : "lb",
+          profile.timezone,
+        )}
+      />
     </>
   );
 }
@@ -226,4 +250,32 @@ export function TodaySkeleton() {
       </Card>
     </>
   );
+}
+
+const STALE_WEIGH_IN_DAYS = 14;
+
+function weightView(
+  weight: Awaited<ReturnType<typeof weightSummary>>,
+  unit: "lb" | "kg",
+  timeZone: string,
+): WeightView {
+  const convert = (kg: number) => (unit === "lb" ? kgToLb(kg) : kg);
+  const trend = weight.trend;
+  const stale =
+    trend &&
+    Date.now() - trend.lastWeighIn.getTime() > STALE_WEIGH_IN_DAYS * 86_400_000;
+  return {
+    unit,
+    trend: trend ? convert(trend.kg) : null,
+    perWeek: trend ? convert(trend.kgPerWeek) : null,
+    lastWeighInLabel: stale
+      ? new Intl.DateTimeFormat("en-US", {
+          timeZone,
+          month: "short",
+          day: "numeric",
+        }).format(trend.lastWeighIn)
+      : null,
+    maintenance: weight.maintenance,
+    underFueling: weight.underFueling,
+  };
 }

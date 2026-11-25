@@ -58,16 +58,26 @@ function formatDistance(meters: number, units: TargetProfile["units"]) {
     : `${(meters / 1000).toFixed(1)} km`;
 }
 
+export type TargetAdjustments = {
+  /** Maintenance estimated from logs and the weight trend (issue 16). */
+  estimatedBaseline?: number | null;
+  /** Guardrail: calories added because weight is dropping too fast. */
+  lossCorrection?: number;
+};
+
 export function dayTargets(
   workouts: Workout[],
   profile: TargetProfile,
+  adjustments: TargetAdjustments = {},
 ): DayTargets {
   const dayType = classifyDay(workouts, profile.long_run_distance_m);
   const runs = workouts.filter((w) => w.type === "run");
   const runDistance = runs.reduce((s, r) => s + (r.distance_m ?? 0), 0);
   const runCalories = runs.reduce((s, r) => s + (r.calories_estimate ?? 0), 0);
   const runBonus = Math.round(runCalories * RUN_CALORIE_SHARE);
-  const baseline = profile.baseline_calories;
+  // A baseline set in the profile wins over the estimate.
+  const baseline =
+    profile.baseline_calories ?? adjustments.estimatedBaseline ?? null;
   const distance = formatDistance(runDistance, profile.units);
 
   const plan: Record<
@@ -104,6 +114,12 @@ export function dayTargets(
   if (dayType === "run" || dayType === "long_run") {
     if (calories !== null && runBonus > 0)
       reason += ` · +${runBonus} for the run`;
+  }
+  // Guardrail: weight dropping faster than the allowed rate raises the target.
+  const correction = adjustments.lossCorrection ?? 0;
+  if (calories !== null && correction > 0) {
+    calories += correction;
+    reason += ` · +${correction} to slow weight loss`;
   }
   // Guardrail: never below the calorie floor.
   if (calories !== null && calories < profile.calorie_floor) {
